@@ -1,4 +1,4 @@
-const VERSION = '2.8.7';
+const VERSION = '2.8.8';
 const STATIC_CACHE = `xcmg-static-${VERSION}`;
 const RUNTIME_CACHE = `xcmg-runtime-${VERSION}`;
 const APP_SHELL = [
@@ -7,10 +7,10 @@ const APP_SHELL = [
   '/offline.html',
   '/manifest.json',
   '/connectivity-check.txt',
-  '/css/style.css?v=2.8.7',
-  '/js/offline-sync.js?v=2.8.7',
-  '/js/app.js?v=2.8.7',
-  '/js/pwa.js?v=2.8.7',
+  '/css/style.css?v=2.8.8',
+  '/js/offline-sync.js?v=2.8.8',
+  '/js/app.js?v=2.8.8',
+  '/js/pwa.js?v=2.8.8',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-512.png',

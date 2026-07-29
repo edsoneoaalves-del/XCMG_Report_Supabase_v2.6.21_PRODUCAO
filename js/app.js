@@ -650,9 +650,31 @@
     log('Usuário excluído',`${currentUser.name} excluiu o acesso de ${user.name} (@${user.username})`);
     save();renderUsers();renderHistory();updateTurnPanel();toast('Usuário excluído com sucesso');
   }
+  async function refreshAuthFromSupabase(){
+    try{
+      const online=await window.XCMGOfflineSync?.checkConnection?.();
+      if(!online||!supabaseClient)return false;
+      const remoteAuth=await remoteGet(AUTH_KEY);
+      if(!remoteAuth||!Array.isArray(remoteAuth.users)||!remoteAuth.users.length)return false;
+      auth={...remoteAuth,currentUserId:null};
+      localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
+      return true;
+    }catch(error){
+      console.warn('Não foi possível atualizar os usuários antes do login.',error);
+      return false;
+    }
+  }
   async function login(e){
-    e.preventDefault();const username=$('#loginUsername').value.trim().toLowerCase(),passwordHash=await hashPassword($('#loginPassword').value);
-    const user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
+    e.preventDefault();
+    const username=$('#loginUsername').value.trim().toLowerCase();
+    const passwordHash=await hashPassword($('#loginPassword').value);
+    let user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
+    // No PWA instalado, o armazenamento é separado do navegador. Se o acesso não
+    // estiver no cache local, buscamos novamente a lista oficial no Supabase.
+    if(!user){
+      const refreshed=await refreshAuthFromSupabase();
+      if(refreshed)user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
+    }
     if(!user){alert('Usuário ou senha inválidos.');return}
     // A sessão fica apenas em memória e termina ao atualizar/fechar a página.
     currentUser=user;startSession();
@@ -700,6 +722,6 @@
     $('#importInput').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!data.equipments)throw Error();state=data;state.equipments=state.equipments.map(migrateEquipment);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Backup importado')}catch{alert('Arquivo de backup inválido.')}};
     $('#resetBtn').onclick=()=>{if(confirm('Restaurar todos os dados iniciais?')){state=clone(initial);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Dados restaurados')}};
   }
-  async function init(){window.addEventListener('beforeunload',flushAutoTurnSave);window.addEventListener('online',()=>setTimeout(flushOfflineQueue,700));let autoFlushRunning=false;window.addEventListener('xcmg-sync-status',event=>{const d=event.detail||{};if(!d.online||d.checking||d.syncing||Number(d.pending||0)<1||autoFlushRunning)return;autoFlushRunning=true;setTimeout(()=>Promise.resolve(flushOfflineQueue()).finally(()=>{autoFlushRunning=false}),400)});setupSelects();bind();$('#reportDate').value=new Date().toISOString().slice(0,10);setInterval(()=>$('#clock').textContent=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'medium'}).format(new Date()),1000);await hydrateRemoteCache();await loadAuth();if(currentUser)startSession();else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js').catch(()=>{});setTimeout(flushOfflineQueue,1200)}
+  async function init(){window.addEventListener('beforeunload',flushAutoTurnSave);window.addEventListener('online',()=>setTimeout(flushOfflineQueue,700));let autoFlushRunning=false;window.addEventListener('xcmg-sync-status',event=>{const d=event.detail||{};if(!d.online||d.checking||d.syncing||Number(d.pending||0)<1||autoFlushRunning)return;autoFlushRunning=true;setTimeout(()=>Promise.resolve(flushOfflineQueue()).finally(()=>{autoFlushRunning=false}),400)});setupSelects();bind();$('#reportDate').value=new Date().toISOString().slice(0,10);setInterval(()=>$('#clock').textContent=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'medium'}).format(new Date()),1000);await window.XCMGOfflineSync?.checkConnection?.();await hydrateRemoteCache();await loadAuth();if(currentUser)startSession();else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js').catch(()=>{});setTimeout(flushOfflineQueue,1200)}
   init();
 })();
