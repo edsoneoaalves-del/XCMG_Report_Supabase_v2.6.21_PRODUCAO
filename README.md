@@ -42,7 +42,7 @@ A URL e a chave pública do Supabase estão em `js/app.js`. A chave `publishable
 - Falhas de gravação remota mudam o status imediatamente para offline e colocam os dados na fila local.
 
 
-## Correção 2.8.8 — abertura local e hospedada
+## Correção 2.8.7 — abertura local e hospedada
 
 - Ao abrir `index.html` diretamente pelo Explorador (`file://`), o navegador não permite Service Worker nem heartbeat HTTP. Nesse modo, o indicador acompanha `navigator.onLine` e os eventos online/offline.
 - Em Vercel, localhost ou outro servidor HTTP/HTTPS, o indicador usa o arquivo `connectivity-check.txt` sem cache para validar a conexão real.

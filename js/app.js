@@ -650,31 +650,9 @@
     log('Usuário excluído',`${currentUser.name} excluiu o acesso de ${user.name} (@${user.username})`);
     save();renderUsers();renderHistory();updateTurnPanel();toast('Usuário excluído com sucesso');
   }
-  async function refreshAuthFromSupabase(){
-    try{
-      const online=await window.XCMGOfflineSync?.checkConnection?.();
-      if(!online||!supabaseClient)return false;
-      const remoteAuth=await remoteGet(AUTH_KEY);
-      if(!remoteAuth||!Array.isArray(remoteAuth.users)||!remoteAuth.users.length)return false;
-      auth={...remoteAuth,currentUserId:null};
-      localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
-      return true;
-    }catch(error){
-      console.warn('Não foi possível atualizar os usuários antes do login.',error);
-      return false;
-    }
-  }
   async function login(e){
-    e.preventDefault();
-    const username=$('#loginUsername').value.trim().toLowerCase();
-    const passwordHash=await hashPassword($('#loginPassword').value);
-    let user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
-    // No PWA instalado, o armazenamento é separado do navegador. Se o acesso não
-    // estiver no cache local, buscamos novamente a lista oficial no Supabase.
-    if(!user){
-      const refreshed=await refreshAuthFromSupabase();
-      if(refreshed)user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
-    }
+    e.preventDefault();const username=$('#loginUsername').value.trim().toLowerCase(),passwordHash=await hashPassword($('#loginPassword').value);
+    const user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
     if(!user){alert('Usuário ou senha inválidos.');return}
     // A sessão fica apenas em memória e termina ao atualizar/fechar a página.
     currentUser=user;startSession();
