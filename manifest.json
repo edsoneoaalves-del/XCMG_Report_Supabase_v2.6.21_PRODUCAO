@@ -1,21 +1,50 @@
 {
-  "name": "XCMG Report v2.6.23",
+  "id": "/",
+  "name": "XCMG Report",
   "short_name": "XCMG Report",
-  "description": "Sistema de gestão operacional e geração de relatórios da frota.",
-  "start_url": "./",
+  "description": "Gestão operacional e geração de relatórios da frota XCMG.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#07111f",
   "theme_color": "#07162a",
+  "categories": ["business", "productivity", "utilities"],
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Equipamentos",
+      "short_name": "Equipamentos",
+      "url": "/?source=pwa&page=equipamentos",
+      "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Relatórios",
+      "short_name": "Relatórios",
+      "url": "/?source=pwa&page=relatorios",
+      "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]
     }
   ]
 }

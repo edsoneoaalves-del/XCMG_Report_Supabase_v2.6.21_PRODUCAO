@@ -3,13 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#07162a">
+  <meta name="theme-color" content="#07162a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f7fb" media="(prefers-color-scheme: light)">
+  <meta name="application-name" content="XCMG Report">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="XCMG Report">
+  <meta name="format-detection" content="telephone=no">
   <title>XCMG Report</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/style.css?v=2.6.22">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css?v=2.7.0">
 </head>
 <body>
+  <section class="pwa-install-banner hidden" id="pwaInstallBanner" aria-live="polite">
+    <div class="pwa-install-icon">XC</div>
+    <div class="pwa-install-copy"><strong>Instalar XCMG Report</strong><span>Use em tela cheia, como aplicativo.</span></div>
+    <button class="pwa-install-action" id="pwaInstallBtn" type="button">Instalar</button>
+    <button class="pwa-install-close" id="pwaInstallClose" type="button" aria-label="Fechar">×</button>
+  </section>
+
+  <div class="pwa-ios-backdrop hidden" id="pwaIosBackdrop">
+    <section class="pwa-ios-sheet" role="dialog" aria-modal="true" aria-labelledby="pwaIosTitle">
+      <div class="pwa-sheet-handle"></div>
+      <div class="pwa-install-icon">XC</div>
+      <h2 id="pwaIosTitle">Instalar no iPhone</h2>
+      <p>Abra este endereço no Safari, toque em <strong>Compartilhar</strong> e escolha <strong>Adicionar à Tela de Início</strong>.</p>
+      <button class="btn primary" id="pwaIosClose" type="button">Entendi</button>
+    </section>
+  </div>
   <div class="login-screen" id="loginScreen">
     <div class="login-card">
       <div class="brand login-brand"><div class="brand-mark">X</div><div><strong>XCMG Report</strong><small>Acesso por usuário</small></div></div>
@@ -190,5 +214,6 @@
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/app.js?v=2.6.22"></script>
+  <script src="js/pwa.js?v=2.7.0" defer></script>
 </body>
 </html>
