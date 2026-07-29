@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07162a">
+  <title>XCMG Report</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css?v=2.6.21">
+</head>
+<body>
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="brand login-brand"><div class="brand-mark">X</div><div><strong>XCMG Report</strong><small>Acesso por usuário</small></div></div>
+      <h1>Entrar</h1>
+      <p class="muted">Acesse suas informações da turma.</p>
+      <form id="loginForm">
+        <label>Usuário<input id="loginUsername" autocomplete="username" required></label>
+        <label>Senha<input type="password" id="loginPassword" autocomplete="current-password" required></label>
+        <button class="btn primary login-btn" type="submit">Entrar</button>
+      </form>
+      <small class="login-help">Use o acesso fornecido pelo administrador.</small>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">X</div><div><strong>XCMG Report</strong><small>Gestão operacional</small></div></div>
+      <nav id="nav">
+        <button class="nav-item active" data-page="dashboard">▦ <span>Dashboard</span></button>
+        <button class="nav-item" data-page="equipamentos">▤ <span>Equipamentos</span></button>
+        <button class="nav-item" data-page="relatorios">▧ <span>Relatórios</span></button>
+        <button class="nav-item" data-page="historico">◷ <span>Histórico</span></button>
+        <button class="nav-item admin-only" data-page="usuarios">♙ <span>Usuários</span></button>
+        <button class="nav-item" data-page="configuracoes">⚙ <span>Configurações</span></button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn mobile" id="menuBtn">☰</button>
+        <div><h1 id="pageTitle">Dashboard</h1><p id="pageSubtitle">Visão geral da operação</p></div>
+        <div class="top-actions"><div class="current-user"><strong id="currentUserName"></strong><small id="currentUserTeam"></small></div><span id="clock"></span><button class="icon-btn" id="themeBtn" title="Alternar tema">◐</button><button class="btn small" id="logoutBtn">Sair</button></div>
+      </header>
+
+      <section class="page active" id="page-dashboard">
+        <div class="stats" id="stats"></div>
+        <article class="panel maintenance-panel"><div class="panel-head"><div><span class="eyebrow">MANUTENÇÃO DA FROTA</span><h2>Preventivas, corretivas e equipamentos substituídos</h2></div><span class="panel-note">O equipamento substituído entra na manutenção. O substituto mantém seu status operacional.</span></div><div id="maintenanceList" class="maintenance-list"></div></article>
+        <article class="panel seal-panel"><div class="panel-head"><div><span class="eyebrow">CONTROLE VALE</span><h2>Renovação do selo</h2></div><span class="panel-note">Painel exclusivo, separado dos indicadores de manutenção.</span></div><div id="sealRenewalList" class="seal-list"></div></article>
+        <div class="grid-2">
+          <article class="panel"><div class="panel-head"><div><span class="eyebrow">INDICADORES OPERACIONAIS</span><h2>Status da frota</h2></div></div><div id="statusBars" class="bars"></div></article>
+          <article class="panel"><div class="panel-head"><div><span class="eyebrow">MONITORAMENTO</span><h2>Alertas operacionais</h2></div></div><div id="alerts"></div></article>
+        </div>
+        <article class="panel"><div class="panel-head"><div><span class="eyebrow">RASTREABILIDADE</span><h2>Atualizações recentes</h2></div><button class="link-btn" data-go="historico">Ver histórico</button></div><div id="recentUpdates"></div></article>
+      </section>
+
+      <section class="page" id="page-equipamentos">
+        <div class="toolbar">
+          <div class="search"><span>⌕</span><input id="searchInput" placeholder="Pesquisar por prefixo, categoria ou local..."></div>
+          <select id="filterCategory"><option value="">Todas as categorias</option></select>
+          <select id="filterStatus"><option value="">Todos os status</option></select>
+          <button class="btn primary" id="newEquipmentBtn">+ Novo equipamento</button>
+        </div>
+        <div class="equipment-grid" id="equipmentGrid"></div>
+        <div class="empty hidden" id="equipmentEmpty">Nenhum equipamento encontrado.</div>
+      </section>
+
+      <section class="page" id="page-relatorios">
+        <div class="grid-2 report-layout">
+          <article class="panel">
+            <div class="panel-head"><h2>Dados do relatório</h2></div>
+            <div class="form-grid">
+              <label>Data<input type="date" id="reportDate"></label>
+              <label>Saudação
+                <select id="reportGreeting">
+                  <option value="Bom dia">Bom dia</option>
+                  <option value="Boa tarde">Boa tarde</option>
+                  <option value="Boa noite">Boa noite</option>
+                </select>
+              </label>
+              <label>Turma<input id="reportTeam" value="Turma D"></label>
+              <label>Supervisor<input id="reportSupervisor" placeholder="Nome do supervisor"></label>
+              <label>Téc. de Programação<input id="reportProgrammer" value="Edson Alves"></label>
+              <label>Téc. de Segurança<input id="reportSafety" placeholder="Nome"></label>
+              <label>Projetista/Rigger<input id="reportRigger" placeholder="Nome"></label>
+            </div>
+            <div class="actions"><button class="btn primary" id="generateReportBtn">Gerar relatório</button><button class="btn" id="saveReportBtn">Salvar no histórico</button></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><h2>Pré-visualização WhatsApp</h2><div><button class="btn small" id="copyReportBtn">Copiar</button><button class="btn small" id="shareReportBtn">Compartilhar</button></div></div>
+            <textarea id="reportOutput" class="report-output" spellcheck="false" wrap="off"></textarea>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="page-historico">
+        <div class="toolbar"><div class="search"><span>⌕</span><input id="historySearch" placeholder="Pesquisar no histórico..."></div><button class="btn danger" id="clearHistoryBtn">Limpar histórico</button></div>
+        <div class="timeline" id="historyList"></div>
+      </section>
+
+
+      <section class="page" id="page-usuarios">
+        <div class="toolbar">
+          <div><h2>Usuários</h2><p class="muted">Cada usuário possui seu próprio acesso. As informações operacionais são salvas automaticamente para garantir a continuidade entre os turnos.</p></div>
+          <button class="btn primary" id="newUserBtn">+ Criar usuário</button>
+        </div>
+        <div class="user-list" id="userList"></div>
+      </section>
+
+      <section class="page" id="page-configuracoes">
+        <div class="grid-2">
+          <article class="panel"><div class="panel-head"><h2>Empresa e relatório</h2></div><div class="form-grid one">
+            <label>Nome da empresa<input id="cfgCompany"></label>
+            <label>Título padrão<input id="cfgTitle"></label>
+            <label>Limite de combustível baixo (%)<input type="number" min="0" max="100" id="cfgFuelLimit"></label>
+          </div><button class="btn primary" id="saveSettingsBtn">Salvar configurações</button></article>
+          <article class="panel"><div class="panel-head"><h2>Alterar minha senha</h2></div><form id="changePasswordForm" class="form-grid one">
+            <label>Senha atual<input type="password" id="currentPassword" required minlength="4" autocomplete="current-password"></label>
+            <label>Nova senha<input type="password" id="newPassword" required minlength="4" autocomplete="new-password"></label>
+            <label>Confirmar nova senha<input type="password" id="confirmNewPassword" required minlength="4" autocomplete="new-password"></label>
+            <button type="submit" class="btn primary">Alterar senha</button>
+          </form></article>
+          <article class="panel"><div class="panel-head"><h2>Dados</h2></div><p class="muted">Exporte uma cópia de segurança ou importe os dados em outro aparelho.</p><div class="actions vertical"><button class="btn" id="exportBtn">Exportar backup</button><label class="btn file-btn">Importar backup<input type="file" id="importInput" accept="application/json"></label><button class="btn danger" id="resetBtn">Restaurar dados iniciais</button></div></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-head"><h2 id="modalTitle">Novo equipamento</h2><button class="icon-btn" id="closeModalBtn">×</button></div>
+      <form id="equipmentForm">
+        <input type="hidden" id="equipmentId">
+        <div class="form-grid">
+          <label>Prefixo*<input id="eqPrefix" list="prefixOptions" required placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="prefixOptions"></datalist></label>
+          <label>Categoria*<select id="eqCategory" required></select></label>
+          <input type="hidden" id="eqCapacity">
+          <label>Status operacional*<select id="eqStatus" required></select></label>
+          <label id="clientField">Cliente<input id="eqClient" list="clientOptions" placeholder="Pool, Vulca, CMD..."></label>
+          <label>Localização*<input id="eqLocation" list="locationOptions" required placeholder="Pátio XCMG"></label>
+          <label id="loadStatusField">Status do Munck<select id="eqLoadStatus"><option value="">Selecione...</option><option>Carregado</option><option>Vazio</option></select></label>
+          <label>Substitui equipamento<input id="eqSubstitute" list="substituteOptions" placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="substituteOptions"></datalist></label>
+          <label>Combustível (%)<input type="number" min="0" max="100" id="eqFuel" value="100"></label>
+          <label class="full">Condição / posicionamento<input id="eqCondition" placeholder="com gaiola, patolado, carregado com contrapeso..."></label>
+          <label class="full">Observação<textarea id="eqNotes" rows="3"></textarea></label>
+          <datalist id="clientOptions">
+            <option value="Pool"><option value="Truckless/GPA"><option value="Vulca"><option value="Sotreq"><option value="Elétrica"><option value="Perfuração"><option value="Escavação"><option value="CMD"><option value="Preventiva Truckless"><option value="Oficina">
+          </datalist>
+          <datalist id="locationOptions">
+            <option value="Pátio XCMG"><option value="Base Externa XCMG"><option value="Pátio Iglu"><option value="Pátio 14"><option value="5ª Britagem"><option value="BM11"><option value="BM12"><option value="TR12"><option value="TR13"><option value="Mina"><option value="Usina"><option value="Oficina">
+          </datalist>
+        </div>
+        <div class="actions end"><button type="button" class="btn" id="cancelModalBtn">Cancelar</button><button type="submit" class="btn primary">Salvar equipamento</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="userModalBackdrop">
+    <div class="modal user-modal">
+      <div class="modal-head"><h2>Criar usuário</h2><button class="icon-btn" id="closeUserModalBtn">×</button></div>
+      <form id="userForm">
+        <div class="form-grid">
+          <label>Nome completo*<input id="userFullName" required placeholder="Ex.: Edson Alves"></label>
+          <label>Turma*<input id="userTeam" required placeholder="Ex.: Turma D"></label>
+          <label>Usuário*<input id="newUsername" required autocomplete="off" placeholder="Ex.: edson.alves"></label>
+          <label>Senha*<input type="password" id="newUserPassword" required minlength="4" autocomplete="new-password"></label>
+        </div>
+        <p class="muted user-note">Somente o administrador pode criar usuários. Os dados operacionais são atualizados automaticamente entre os turnos.</p>
+        <div class="actions end"><button type="button" class="btn" id="cancelUserModalBtn">Cancelar</button><button type="submit" class="btn primary">Criar usuário</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="resetPasswordModalBackdrop">
+    <div class="modal user-modal">
+      <div class="modal-head"><h2>Redefinir senha</h2><button class="icon-btn" id="closeResetPasswordModalBtn">×</button></div>
+      <form id="resetPasswordForm">
+        <input type="hidden" id="resetPasswordUserId">
+        <p class="muted">Usuário: <strong id="resetPasswordUserName"></strong></p>
+        <div class="form-grid one">
+          <label>Nova senha*<input type="password" id="adminNewPassword" required minlength="4" autocomplete="new-password"></label>
+          <label>Confirmar nova senha*<input type="password" id="adminConfirmPassword" required minlength="4" autocomplete="new-password"></label>
+        </div>
+        <div class="actions end"><button type="button" class="btn" id="cancelResetPasswordBtn">Cancelar</button><button type="submit" class="btn primary">Salvar nova senha</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/app.js?v=2.6.21"></script>
+</body>
+</html>
