@@ -178,7 +178,12 @@
       auth={users:[{id:crypto.randomUUID(),name:'Edson Alves',team:'Turma D',username:'edson',passwordHash:await hashPassword('1234'),role:'admin',createdAt:new Date().toISOString()}],currentUserId:null};
       localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
     }
-    currentUser=auth.users.find(u=>u.id===auth.currentUserId)||null;
+    // Segurança: nunca restaurar sessão automaticamente após recarregar ou reabrir o sistema.
+    // O usuário sempre deverá informar usuário e senha para iniciar uma nova sessão.
+    auth.currentUserId=null;
+    localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
+    remoteSet(AUTH_KEY,auth);
+    currentUser=null;
   }
   function saveAuth(){localStorage.setItem(AUTH_KEY,JSON.stringify(auth));remoteSet(AUTH_KEY,auth)}
 
@@ -608,7 +613,8 @@
     e.preventDefault();const username=$('#loginUsername').value.trim().toLowerCase(),passwordHash=await hashPassword($('#loginPassword').value);
     const user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
     if(!user){alert('Usuário ou senha inválidos.');return}
-    auth.currentUserId=user.id;saveAuth();currentUser=user;startSession();
+    // A sessão fica apenas em memória e termina ao atualizar/fechar a página.
+    currentUser=user;startSession();
   }
   function logout(){flushAutoTurnSave();auth.currentUserId=null;saveAuth();currentUser=null;location.reload()}
   function startSession(){

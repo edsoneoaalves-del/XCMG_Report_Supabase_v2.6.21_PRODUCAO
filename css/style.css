@@ -667,3 +667,70 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
   .actions,.actions.end{display:grid;grid-template-columns:1fr;justify-content:stretch}.actions .btn{width:100%}
   .modal{padding:16px;border-radius:14px}.modal-head{position:sticky;top:-16px;background:var(--surface);z-index:2;padding:12px 0 8px}
 }
+
+/* v2.6.23 MOBILE — interface desenhada para Android e iPhone */
+@media (max-width:800px){
+  body{font-size:14px}
+  .main{padding-left:12px;padding-right:12px}
+  .topbar{min-height:72px;margin-bottom:14px;padding:10px 12px}
+  .topbar h1{font-size:25px;line-height:1;font-weight:850;letter-spacing:-.03em}
+  .topbar .mobile{border-radius:14px;background:var(--surface);border-color:#2a405c}
+  .top-actions .btn{min-height:44px;border-radius:13px;font-weight:750}
+
+  #page-dashboard .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  #page-dashboard .stat{min-height:116px;padding:15px 14px 13px;border-radius:15px}
+  #page-dashboard .stat .label{font-size:10px;line-height:1.2;letter-spacing:.075em}
+  #page-dashboard .stat .value{font-size:32px;margin-top:12px}
+  #page-dashboard .stat .hint{font-size:10px;line-height:1.25;margin-top:8px;white-space:normal}
+  #page-dashboard .stat-accent{height:3px}
+  #page-dashboard .panel{padding:15px;border-radius:15px}
+  .maintenance-list{grid-template-columns:1fr 1fr;gap:8px}
+  .maintenance-item{min-height:72px;padding:10px;border-radius:11px}
+  .maintenance-item small{max-width:none;text-align:left}
+
+  #page-equipamentos .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  #page-equipamentos .toolbar .search{grid-column:1/-1}
+  #page-equipamentos .toolbar .btn{grid-column:1/-1;font-size:16px;font-weight:800;border-radius:13px}
+  #page-equipamentos .toolbar select{width:100%;min-height:48px;border-radius:13px;margin:0}
+
+  .equipment-table tbody{gap:14px}
+  .equipment-table tbody tr{padding:14px;border-radius:17px;box-shadow:inset 4px 0 var(--status-color),0 12px 30px rgba(0,0,0,.20)}
+  .equipment-table td{display:block;padding:11px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 68%,transparent)}
+  .equipment-table td::before{display:block;margin-bottom:7px;font-size:10px;letter-spacing:.09em}
+  .equipment-id-cell{display:flex!important;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .equipment-id-cell::before{width:100%;margin-bottom:2px}
+  .equipment-id-cell strong{font-size:25px;line-height:1}
+  .equipment-id-cell small{font-size:13px;margin:0}
+  .status-buttons{gap:10px}
+  .status-dot{width:42px;height:42px;flex-basis:42px;font-size:20px}
+  .quick-field,.client-quick-field,.substitute-quick-field{font-size:16px;padding:12px 13px;border-radius:12px;margin-top:0}
+  .fuel-edit{gap:8px}.fuel-edit .quick-field{max-width:calc(100% - 28px)}
+  .update-control{width:100%;justify-content:center;font-size:14px;padding:11px 13px;border-radius:12px}
+  .row-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%}
+  .row-actions .btn{font-size:15px;min-height:48px;border-radius:12px;padding:11px 12px}
+  .row-actions .icon-delete{grid-column:1/-1;width:48px;height:46px;justify-self:start;margin-top:2px}
+
+  .modal-backdrop{align-items:end;padding-left:0;padding-right:0;padding-bottom:0}
+  .modal{width:100%;max-height:94dvh;border-radius:22px 22px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom))}
+  .form-grid{grid-template-columns:1fr;gap:13px}
+  .form-grid label{font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.055em;color:#9fb4cf}
+  .form-grid input,.form-grid select,.form-grid textarea{margin-top:7px;min-height:48px;border-radius:12px;padding:12px 13px;text-transform:none;letter-spacing:normal;font-weight:500}
+  .actions.end{display:grid;grid-template-columns:1fr;gap:9px}
+  .actions.end .btn{min-height:48px;font-size:15px;border-radius:12px}
+  .actions.end .btn.primary{order:-1}
+}
+
+@media (max-width:430px){
+  .main{padding-left:9px;padding-right:9px}
+  .topbar{margin-left:-9px;margin-right:-9px;padding-left:12px;padding-right:12px}
+  #page-dashboard .stats{gap:8px}
+  #page-dashboard .stat{min-height:108px;padding:13px 12px}
+  #page-dashboard .stat .value{font-size:29px}
+  #page-dashboard .stat .hint{font-size:9px}
+  .maintenance-list{grid-template-columns:1fr}
+  #page-equipamentos .toolbar{grid-template-columns:1fr}
+  #page-equipamentos .toolbar .search,#page-equipamentos .toolbar .btn{grid-column:auto}
+  .equipment-table tbody tr{padding:13px 12px}
+  .row-actions{grid-template-columns:1fr}
+  .row-actions .icon-delete{grid-column:auto}
+}

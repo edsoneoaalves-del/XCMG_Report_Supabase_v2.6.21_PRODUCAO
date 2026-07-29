@@ -1,4 +1,4 @@
-# XCMG Report v2.6.21
+# XCMG Report v2.6.23
 
 Sistema web responsivo para gestão operacional, equipamentos, relatórios, histórico e usuários.
 
@@ -18,10 +18,12 @@ O projeto preserva o administrador inicial existente no código. Por segurança,
 
 A URL e a chave pública do Supabase estão em `js/app.js`. A chave `publishable/anon` pode ficar no navegador, mas as políticas atuais da tabela permitem leitura e escrita anônimas para manter compatibilidade com o aplicativo. Para uso com dados sensíveis ou acesso externo amplo, recomenda-se uma próxima etapa com Supabase Auth e políticas por usuário.
 
-## Melhorias da v2.6.21
+## Melhorias da v2.6.23
 
 - Removidos do menu lateral o texto “Dados salvos neste dispositivo” e a versão antiga.
 - Removida da tela de login a exibição da senha inicial.
-- Cache e referências atualizados para v2.6.21.
+- Cache e referências atualizados para v2.6.23.
 - Ajustes para Android e iPhone: área segura, botões maiores, campos sem zoom automático, modais roláveis e melhor leitura.
 - Arquivos `.gitignore`, `README.md` e configuração Vercel revisados.
+
+- Login obrigatório a cada abertura ou atualização da página; a sessão não é mais restaurada automaticamente.
