@@ -18,30 +18,71 @@
       setTimeout(()=>toast('Não foi possível sincronizar com o Supabase. Verifique a tabela e as políticas. Dados mantidos neste aparelho.'),500);
     }
   }
+  function connectionIsOnline(){return window.XCMGOfflineSync?.isOnline?.()===true}
   async function remoteGet(key){
+    if(!connectionIsOnline())return null;
     if(!supabaseClient){showSyncWarning(new Error('Biblioteca do Supabase não carregada.'));return null}
     try{
       const {data,error}=await supabaseClient.from(SUPABASE_TABLE).select('value').eq('key',key).maybeSingle();
       if(error)throw error;
       return data?.value??null;
-    }catch(error){showSyncWarning(error);return null}
+    }catch(error){if(navigator.onLine===false)await window.XCMGOfflineSync?.markOffline?.();else await window.XCMGOfflineSync?.markSyncError?.();showSyncWarning(error);return null}
+  }
+  async function directRemoteSet(key,value){
+    if(!supabaseClient||!connectionIsOnline())return false;
+    const {error}=await supabaseClient.from(SUPABASE_TABLE).upsert({key,value,updated_at:new Date().toISOString()},{onConflict:'key'});
+    if(error)throw error;
+    return true;
+  }
+  async function directRemoteDelete(key){
+    if(!supabaseClient||!connectionIsOnline())return false;
+    const {error}=await supabaseClient.from(SUPABASE_TABLE).delete().eq('key',key);
+    if(error)throw error;
+    return true;
   }
   async function remoteSet(key,value){
-    if(!supabaseClient){showSyncWarning(new Error('Biblioteca do Supabase não carregada.'));return false}
-    try{
-      const {error}=await supabaseClient.from(SUPABASE_TABLE).upsert({key,value,updated_at:new Date().toISOString()},{onConflict:'key'});
-      if(error)throw error;
-      syncWarningShown=false;
+    if(!connectionIsOnline()||!supabaseClient){
+      await window.XCMGOfflineSync?.enqueueSet(key,value);
       return true;
-    }catch(error){showSyncWarning(error);return false}
+    }
+    try{
+      await directRemoteSet(key,value);
+      await window.XCMGOfflineSync?.clearKey(key);
+      syncWarningShown=false;
+      window.XCMGOfflineSync?.emit();
+      return true;
+    }catch(error){
+      if(navigator.onLine===false)await window.XCMGOfflineSync?.markOffline?.();else await window.XCMGOfflineSync?.markSyncError?.();
+      await window.XCMGOfflineSync?.enqueueSet(key,value);
+      showSyncWarning(error);
+      return true;
+    }
   }
   async function remoteDelete(key){
-    if(!supabaseClient){showSyncWarning(new Error('Biblioteca do Supabase não carregada.'));return false}
-    try{
-      const {error}=await supabaseClient.from(SUPABASE_TABLE).delete().eq('key',key);
-      if(error)throw error;
+    if(!connectionIsOnline()||!supabaseClient){
+      await window.XCMGOfflineSync?.enqueueDelete(key);
       return true;
-    }catch(error){showSyncWarning(error);return false}
+    }
+    try{
+      await directRemoteDelete(key);
+      await window.XCMGOfflineSync?.clearKey(key);
+      window.XCMGOfflineSync?.emit();
+      return true;
+    }catch(error){
+      if(navigator.onLine===false)await window.XCMGOfflineSync?.markOffline?.();else await window.XCMGOfflineSync?.markSyncError?.();
+      await window.XCMGOfflineSync?.enqueueDelete(key);
+      showSyncWarning(error);
+      return true;
+    }
+  }
+  async function flushOfflineQueue(){
+    if(!window.XCMGOfflineSync||!connectionIsOnline()||!supabaseClient)return;
+    window.XCMGOfflineSync.emit({syncing:true});
+    const result=await window.XCMGOfflineSync.flush(async item=>{
+      if(item.type==='delete')return directRemoteDelete(item.key);
+      return directRemoteSet(item.key,item.value);
+    });
+    if(result.sent>0)toast(`${result.sent} alteração${result.sent>1?'ões':''} sincronizada${result.sent>1?'s':''} com sucesso`);
   }
   async function hydrateRemoteCache(){
     const keys=[AUTH_KEY,TURN_KEY];
@@ -659,6 +700,6 @@
     $('#importInput').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!data.equipments)throw Error();state=data;state.equipments=state.equipments.map(migrateEquipment);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Backup importado')}catch{alert('Arquivo de backup inválido.')}};
     $('#resetBtn').onclick=()=>{if(confirm('Restaurar todos os dados iniciais?')){state=clone(initial);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Dados restaurados')}};
   }
-  async function init(){window.addEventListener('beforeunload',flushAutoTurnSave);setupSelects();bind();$('#reportDate').value=new Date().toISOString().slice(0,10);setInterval(()=>$('#clock').textContent=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'medium'}).format(new Date()),1000);await hydrateRemoteCache();await loadAuth();if(currentUser)startSession();else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js').catch(()=>{})}
+  async function init(){window.addEventListener('beforeunload',flushAutoTurnSave);window.addEventListener('online',()=>setTimeout(flushOfflineQueue,700));let autoFlushRunning=false;window.addEventListener('xcmg-sync-status',event=>{const d=event.detail||{};if(!d.online||d.checking||d.syncing||Number(d.pending||0)<1||autoFlushRunning)return;autoFlushRunning=true;setTimeout(()=>Promise.resolve(flushOfflineQueue()).finally(()=>{autoFlushRunning=false}),400)});setupSelects();bind();$('#reportDate').value=new Date().toISOString().slice(0,10);setInterval(()=>$('#clock').textContent=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'medium'}).format(new Date()),1000);await hydrateRemoteCache();await loadAuth();if(currentUser)startSession();else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js').catch(()=>{});setTimeout(flushOfflineQueue,1200)}
   init();
 })();

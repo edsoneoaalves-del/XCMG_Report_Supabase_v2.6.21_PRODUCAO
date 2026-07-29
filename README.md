@@ -27,3 +27,23 @@ A URL e a chave pública do Supabase estão em `js/app.js`. A chave `publishable
 - Arquivos `.gitignore`, `README.md` e configuração Vercel revisados.
 
 - Login obrigatório a cada abertura ou atualização da página; a sessão não é mais restaurada automaticamente.
+
+
+## v2.8.1
+- Corrigida a detecção online/offline com verificação real de conectividade.
+- Indicador movido para o canto inferior esquerdo.
+
+
+## v2.8.5 — detecção real de conexão
+
+- O status online/offline agora testa diretamente o endpoint `app_storage` do Supabase.
+- Toda a lógica de gravação e sincronização deixou de depender de `navigator.onLine`.
+- Verificação automática a cada 5 segundos e verificação manual ao clicar no indicador.
+- Falhas de gravação remota mudam o status imediatamente para offline e colocam os dados na fila local.
+
+
+## Correção 2.8.7 — abertura local e hospedada
+
+- Ao abrir `index.html` diretamente pelo Explorador (`file://`), o navegador não permite Service Worker nem heartbeat HTTP. Nesse modo, o indicador acompanha `navigator.onLine` e os eventos online/offline.
+- Em Vercel, localhost ou outro servidor HTTP/HTTPS, o indicador usa o arquivo `connectivity-check.txt` sem cache para validar a conexão real.
+- Para validar a PWA e a sincronização completa, teste pela URL da Vercel ou por um servidor local, nunca apenas clicando duas vezes no `index.html`.

@@ -1,4 +1,4 @@
-const VERSION = '2.7.0';
+const VERSION = '2.8.7';
 const STATIC_CACHE = `xcmg-static-${VERSION}`;
 const RUNTIME_CACHE = `xcmg-runtime-${VERSION}`;
 const APP_SHELL = [
@@ -6,9 +6,11 @@ const APP_SHELL = [
   '/index.html',
   '/offline.html',
   '/manifest.json',
-  '/css/style.css?v=2.7.0',
-  '/js/app.js?v=2.6.22',
-  '/js/pwa.js?v=2.7.0',
+  '/connectivity-check.txt',
+  '/css/style.css?v=2.8.7',
+  '/js/offline-sync.js?v=2.8.7',
+  '/js/app.js?v=2.8.7',
+  '/js/pwa.js?v=2.8.7',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-512.png',
@@ -31,9 +33,13 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
-
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
+
+  // O teste de conexão nunca pode usar cache nem resposta offline do Service Worker.
+  if (url.origin === self.location.origin && url.pathname === '/connectivity-check.txt') {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
@@ -49,19 +55,26 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith((async () => {
+    const isCriticalAsset = ['script', 'style', 'worker'].includes(request.destination);
     const cached = await caches.match(request);
-    if (cached) return cached;
-    try {
-      const response = await fetch(request);
+    const networkPromise = fetch(request).then(async response => {
       if (response.ok) {
         const cache = await caches.open(RUNTIME_CACHE);
         cache.put(request, response.clone());
       }
       return response;
-    } catch {
-      return new Response('', { status: 503, statusText: 'Offline' });
+    }).catch(() => null);
+
+    // JS/CSS usam rede primeiro para que correções publicadas não fiquem presas no cache antigo.
+    if (isCriticalAsset) return (await networkPromise) || cached || new Response('', { status: 503, statusText: 'Offline' });
+    if (cached) {
+      event.waitUntil(networkPromise);
+      return cached;
     }
+    return (await networkPromise) || new Response('', { status: 503, statusText: 'Offline' });
   })());
 });
 
