@@ -108,10 +108,16 @@
     // usamos o estado de rede do próprio navegador para não gerar falso Offline.
     // Em localhost, Vercel ou qualquer servidor HTTP/HTTPS, usamos o heartbeat real.
     if (IS_FILE_PROTOCOL) {
-      detectedOnline = true;
+      detectedOnline = navigator.onLine !== false;
       lastCheckedAt = Date.now();
-      await emit({ online: true, checking: false, syncing: false, syncError: false, localFileMode: true });
-      return true;
+      await emit({
+        online: detectedOnline,
+        checking: false,
+        syncing: false,
+        syncError: false,
+        localFileMode: true
+      });
+      return detectedOnline;
     }
 
     await emit({ checking: true, syncing: false });
@@ -240,6 +246,7 @@
     enqueueDelete: key => put({ key, type: 'delete' }),
     clearKey: remove,
     pendingCount: count,
+    pendingKeys: async () => (await all()).map(item => item.key),
     flush,
     emit,
     checkConnection,

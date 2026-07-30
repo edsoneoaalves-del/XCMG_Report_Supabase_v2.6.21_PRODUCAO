@@ -2,6 +2,7 @@
   'use strict';
   const LEGACY_KEY='xcmg_report_v1';
   const AUTH_KEY='xcmg_report_auth_v1';
+  const AUTH_BACKUP_KEY='xcmg_report_auth_backup_v1';
   const TURN_KEY='xcmg_report_last_turn_v1';
   const USER_KEY=id=>`xcmg_report_user_${id}`;
   const SUPABASE_URL='https://dqslcjxetirfhcftaqjz.supabase.co';
@@ -85,10 +86,23 @@
     if(result.sent>0)toast(`${result.sent} alteração${result.sent>1?'ões':''} sincronizada${result.sent>1?'s':''} com sucesso`);
   }
   async function hydrateRemoteCache(){
+    const pendingKeys=new Set(await window.XCMGOfflineSync?.pendingKeys?.()||[]);
     const keys=[AUTH_KEY,TURN_KEY];
-    for(const key of keys){const value=await remoteGet(key);if(value!==null)localStorage.setItem(key,JSON.stringify(value))}
+    for(const key of keys){
+      if(pendingKeys.has(key))continue;
+      const value=await remoteGet(key);
+      if(value===null)continue;
+      if(key===AUTH_KEY&&(!Array.isArray(value.users)||!value.users.length))continue;
+      localStorage.setItem(key,JSON.stringify(value));
+      if(key===AUTH_KEY)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(value));
+    }
     let cachedAuth=null;try{cachedAuth=JSON.parse(localStorage.getItem(AUTH_KEY))}catch{}
-    for(const user of cachedAuth?.users||[]){const key=USER_KEY(user.id),value=await remoteGet(key);if(value!==null)localStorage.setItem(key,JSON.stringify(value))}
+    for(const user of cachedAuth?.users||[]){
+      const key=USER_KEY(user.id);
+      if(pendingKeys.has(key))continue;
+      const value=await remoteGet(key);
+      if(value!==null)localStorage.setItem(key,JSON.stringify(value));
+    }
   }
   const CATEGORIES=[
     'Status dos Guindastes - Turno',
@@ -208,30 +222,113 @@
       return base;
     }catch{return clone(initial)}
   }
+  function newId(){
+    return globalThis.crypto?.randomUUID?.()||(`id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
+  }
+  function sha256Fallback(bytes){
+    const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    let h0=0x6a09e667,h1=0xbb67ae85,h2=0x3c6ef372,h3=0xa54ff53a,h4=0x510e527f,h5=0x9b05688c,h6=0x1f83d9ab,h7=0x5be0cd19;
+    const bitLen=bytes.length*8;
+    const withOne=bytes.length+1;
+    const paddedLen=((withOne+8+63)>>6)<<6;
+    const buf=new Uint8Array(paddedLen);
+    buf.set(bytes);buf[bytes.length]=0x80;
+    const view=new DataView(buf.buffer);
+    view.setUint32(paddedLen-4,bitLen>>>0);
+    const rr=(n,x)=>(x>>>n)|(x<<(32-n));
+    for(let i=0;i<paddedLen;i+=64){
+      const w=new Uint32Array(64);
+      for(let j=0;j<16;j++)w[j]=view.getUint32(i+j*4);
+      for(let j=16;j<64;j++){
+        const s0=rr(7,w[j-15])^rr(18,w[j-15])^(w[j-15]>>>3);
+        const s1=rr(17,w[j-2])^rr(19,w[j-2])^(w[j-2]>>>10);
+        w[j]=(w[j-16]+s0+w[j-7]+s1)>>>0;
+      }
+      let a=h0,b=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
+      for(let j=0;j<64;j++){
+        const S1=rr(6,e)^rr(11,e)^rr(25,e);
+        const ch=(e&f)^((~e)&g);
+        const t1=(h+S1+ch+K[j]+w[j])>>>0;
+        const S0=rr(2,a)^rr(13,a)^rr(22,a);
+        const maj=(a&b)^(a&c)^(b&c);
+        const t2=(S0+maj)>>>0;
+        h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;
+      }
+      h0=(h0+a)>>>0;h1=(h1+b)>>>0;h2=(h2+c)>>>0;h3=(h3+d)>>>0;h4=(h4+e)>>>0;h5=(h5+f)>>>0;h6=(h6+g)>>>0;h7=(h7+h)>>>0;
+    }
+    return [h0,h1,h2,h3,h4,h5,h6,h7].map(v=>v.toString(16).padStart(8,'0')).join('');
+  }
   async function hashPassword(value){
     const data=new TextEncoder().encode(String(value));
-    const hash=await crypto.subtle.digest('SHA-256',data);
-    return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+    if(globalThis.crypto?.subtle?.digest){
+      try{
+        const hash=await crypto.subtle.digest('SHA-256',data);
+        return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+      }catch{}
+    }
+    return sha256Fallback(data);
   }
+  let authBootstrapOnly=false;
   async function loadAuth(){
     try{auth=JSON.parse(localStorage.getItem(AUTH_KEY))||{users:[],currentUserId:null}}catch{auth={users:[],currentUserId:null}}
     if(!Array.isArray(auth.users)||!auth.users.length){
-      auth={users:[{id:crypto.randomUUID(),name:'Edson Alves',team:'Turma D',username:'edson',passwordHash:await hashPassword('1234'),role:'admin',createdAt:new Date().toISOString()}],currentUserId:null};
-      localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
+      try{auth=JSON.parse(localStorage.getItem(AUTH_BACKUP_KEY))||{users:[],currentUserId:null}}catch{auth={users:[],currentUserId:null}}
     }
-    // Segurança: nunca restaurar sessão automaticamente após recarregar ou reabrir o sistema.
-    // O usuário sempre deverá informar usuário e senha para iniciar uma nova sessão.
+    // Online: tenta recuperar a lista remota sem publicar nada nesta abertura.
+    if((!Array.isArray(auth.users)||!auth.users.length)&&connectionIsOnline()){
+      const remote=await remoteGet(AUTH_KEY);
+      if(remote&&Array.isArray(remote.users)&&remote.users.length){
+        auth={...remote,currentUserId:null};
+      }
+    }
+    if(!Array.isArray(auth.users)||!auth.users.length){
+      // Bootstrap local apenas se não houver usuários. Nunca envia ao Supabase nesta etapa.
+      auth={users:[{id:newId(),name:'Edson Alves',team:'Turma D',username:'edson',passwordHash:await hashPassword('1234'),role:'admin',createdAt:new Date().toISOString()}],currentUserId:null};
+      authBootstrapOnly=true;
+    }else{
+      authBootstrapOnly=false;
+    }
+    // A lista local é preservada para permitir autenticação sem internet.
     auth.currentUserId=null;
     localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
-    remoteSet(AUTH_KEY,auth);
+    if(Array.isArray(auth.users)&&auth.users.length)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(auth));
     currentUser=null;
   }
-  function saveAuth(){localStorage.setItem(AUTH_KEY,JSON.stringify(auth));remoteSet(AUTH_KEY,auth)}
+  async function ensureAuthFromRemote(){
+    if(!connectionIsOnline())return false;
+    const remote=await remoteGet(AUTH_KEY);
+    if(!(remote&&Array.isArray(remote.users)&&remote.users.length))return false;
+    const previousUsername=currentUser?.username;
+    const previousId=currentUser?.id;
+    auth={...remote,currentUserId:previousId||null};
+    authBootstrapOnly=false;
+    localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
+    localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
+    if(previousId||previousUsername){
+      currentUser=auth.users.find(u=>u.id===previousId)||auth.users.find(u=>u.username===previousUsername)||null;
+    }
+    return true;
+  }
+  async function publishAuthRemote(){
+    if(!Array.isArray(auth.users)||!auth.users.length)return;
+    if(authBootstrapOnly){
+      // Bootstrap local nunca deve sobrescrever usuários já existentes no Supabase.
+      if(!connectionIsOnline())return;
+      if(await ensureAuthFromRemote())return;
+      authBootstrapOnly=false;
+    }
+    remoteSet(AUTH_KEY,auth);
+  }
+  function saveAuth(){
+    localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
+    if(Array.isArray(auth.users)&&auth.users.length)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(auth));
+    publishAuthRemote();
+  }
 
   function migrateEquipment(x){
     return {
       ...x,
-      id:x.id||crypto.randomUUID(),
+      id:x.id||newId(),
       category:legacyCategory[x.category]||x.category||CATEGORIES[0],
       status:legacyStatus[x.status]||x.status||STATUSES[0],
       client:String(x.client||'').trim()||DEFAULT_CLIENTS[String(x.prefix||'').trim().toUpperCase()]||'',
@@ -263,7 +360,7 @@
   function saveTurnSnapshot(source='manual'){
     if(!currentUser)return;
     const snapshot={
-      id:crypto.randomUUID(),
+      id:newId(),
       savedAt:new Date().toISOString(),
       source,
       userId:currentUser.id,
@@ -288,7 +385,7 @@
   function esc(v=''){return String(v).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
   function fmtDate(v){return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(v))}
   function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
-  function log(action,detail){state.history.unshift({id:crypto.randomUUID(),action,detail,date:new Date().toISOString()});state.history=state.history.slice(0,500)}
+  function log(action,detail){state.history.unshift({id:newId(),action,detail,date:new Date().toISOString()});state.history=state.history.slice(0,500)}
   function applyTheme(){document.documentElement.classList.toggle('light',state.settings.theme==='light')}
   function setupSelects(){
     $('#filterCategory').innerHTML='<option value="">Todas as categorias</option>'+CATEGORIES.map(x=>`<option>${x}</option>`).join('');
@@ -513,7 +610,7 @@
       return;
     }
     const data={
-      id:id||crypto.randomUUID(),prefix:selected.prefix,category:$('#eqCategory').value,
+      id:id||newId(),prefix:selected.prefix,category:$('#eqCategory').value,
       capacity:($('#eqCapacity').value.trim()||selected.capacity),status:$('#eqStatus').value,client:$('#eqClient').value.trim()||DEFAULT_CLIENTS[selected.prefix]||'',
       location:$('#eqLocation').value.trim(),loadStatus:$('#eqLoadStatus').value,
       substitute:substitute.prefix?equipmentLabel(substitute.prefix,substitute.capacity):'',
@@ -594,7 +691,7 @@
     return out;
   }
   function generateReport(){$('#reportOutput').value=reportText()}
-  function saveReport(){generateReport();const text=$('#reportOutput').value;state.reports.unshift({id:crypto.randomUUID(),date:new Date().toISOString(),text});log('Relatório salvo','Relatório salvo com sucesso');save();saveTurnSnapshot('report');renderHistory();toast('Relatório salvo e liberado para o próximo turno')}
+  function saveReport(){generateReport();const text=$('#reportOutput').value;state.reports.unshift({id:newId(),date:new Date().toISOString(),text});log('Relatório salvo','Relatório salvo com sucesso');save();saveTurnSnapshot('report');renderHistory();toast('Relatório salvo e liberado para o próximo turno')}
   function renderHistory(){const q=$('#historySearch').value.trim().toLowerCase(),list=state.history.filter(x=>!q||`${x.action} ${x.detail}`.toLowerCase().includes(q));$('#historyList').innerHTML=list.map(h=>`<div class="timeline-item"><div class="timeline-date">${fmtDate(h.date)}</div><div><strong>${esc(h.action)}</strong><div class="muted">${esc(h.detail)}</div></div></div>`).join('')||'<div class="empty">Nenhum registro encontrado.</div>'}
   function loadSettingsForm(){$('#cfgCompany').value=state.settings.company;$('#cfgTitle').value=state.settings.title;$('#cfgFuelLimit').value=state.settings.fuelLimit}
   function renderUsers(){
@@ -608,17 +705,23 @@
   function closeUserModal(){$('#userModalBackdrop').classList.add('hidden')}
   async function createUser(e){
     e.preventDefault();if(currentUser?.role!=='admin')return;
+    if(connectionIsOnline())await ensureAuthFromRemote();
+    if(currentUser?.role!=='admin'){alert('Sessão atualizada. Entre novamente para gerenciar usuários.');return}
     const name=$('#userFullName').value.trim(),team=$('#userTeam').value.trim(),username=$('#newUsername').value.trim().toLowerCase(),password=$('#newUserPassword').value;
     if(auth.users.some(u=>u.username.toLowerCase()===username)){alert('Este nome de usuário já existe.');return}
-    const user={id:crypto.randomUUID(),name,team,username,passwordHash:await hashPassword(password),role:'user',createdAt:new Date().toISOString()};
+    const user={id:newId(),name,team,username,passwordHash:await hashPassword(password),role:'user',createdAt:new Date().toISOString()};
+    authBootstrapOnly=false;
     auth.users.push(user);saveAuth();localStorage.setItem(USER_KEY(user.id),JSON.stringify(clone(initial)));remoteSet(USER_KEY(user.id),clone(initial));closeUserModal();renderUsers();toast('Usuário criado com sucesso');
   }
   async function changeOwnPassword(e){
     e.preventDefault();
+    if(connectionIsOnline())await ensureAuthFromRemote();
+    if(!currentUser){alert('Sessão atualizada. Entre novamente para alterar a senha.');return}
     const current=$('#currentPassword').value,newPassword=$('#newPassword').value,confirmPassword=$('#confirmNewPassword').value;
     if(await hashPassword(current)!==currentUser.passwordHash){alert('A senha atual está incorreta.');return}
     if(newPassword!==confirmPassword){alert('A confirmação da nova senha não confere.');return}
     if(newPassword.length<4){alert('A nova senha deve ter pelo menos 4 caracteres.');return}
+    authBootstrapOnly=false;
     currentUser.passwordHash=await hashPassword(newPassword);saveAuth();$('#changePasswordForm').reset();log('Senha alterada',`${currentUser.name} alterou a própria senha`);save();renderHistory();toast('Senha alterada com sucesso');
   }
   function openResetPasswordModal(userId){
@@ -651,10 +754,27 @@
     save();renderUsers();renderHistory();updateTurnPanel();toast('Usuário excluído com sucesso');
   }
   async function login(e){
-    e.preventDefault();const username=$('#loginUsername').value.trim().toLowerCase(),passwordHash=await hashPassword($('#loginPassword').value);
+    e.preventDefault();
+    const username=$('#loginUsername').value.trim().toLowerCase();
+    const passwordHash=await hashPassword($('#loginPassword').value);
+    // Online: atualiza a lista a partir do Supabase antes de validar, sem sobrescrever o remoto.
+    if(connectionIsOnline()){
+      const remote=await remoteGet(AUTH_KEY);
+      if(remote&&Array.isArray(remote.users)&&remote.users.length){
+        auth={...remote,currentUserId:null};
+        authBootstrapOnly=false;
+        localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
+        localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(auth));
+      }
+    }
     const user=auth.users.find(u=>u.username.toLowerCase()===username&&u.passwordHash===passwordHash);
-    if(!user){alert('Usuário ou senha inválidos.');return}
-    // A sessão fica apenas em memória e termina ao atualizar/fechar a página.
+    if(!user){
+      if(!connectionIsOnline()&&(!Array.isArray(auth.users)||!auth.users.length))alert('Para liberar o primeiro acesso offline, conecte-se à internet e entre uma vez neste aparelho.');
+      else alert('Usuário ou senha inválidos.');
+      return
+    }
+    // Mantém uma cópia local dos acessos para o próximo login sem internet.
+    localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
     currentUser=user;startSession();
   }
   function logout(){flushAutoTurnSave();auth.currentUserId=null;saveAuth();currentUser=null;location.reload()}
@@ -700,6 +820,29 @@
     $('#importInput').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!data.equipments)throw Error();state=data;state.equipments=state.equipments.map(migrateEquipment);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Backup importado')}catch{alert('Arquivo de backup inválido.')}};
     $('#resetBtn').onclick=()=>{if(confirm('Restaurar todos os dados iniciais?')){state=clone(initial);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Dados restaurados')}};
   }
-  async function init(){window.addEventListener('beforeunload',flushAutoTurnSave);window.addEventListener('online',()=>setTimeout(flushOfflineQueue,700));let autoFlushRunning=false;window.addEventListener('xcmg-sync-status',event=>{const d=event.detail||{};if(!d.online||d.checking||d.syncing||Number(d.pending||0)<1||autoFlushRunning)return;autoFlushRunning=true;setTimeout(()=>Promise.resolve(flushOfflineQueue()).finally(()=>{autoFlushRunning=false}),400)});setupSelects();bind();$('#reportDate').value=new Date().toISOString().slice(0,10);setInterval(()=>$('#clock').textContent=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'medium'}).format(new Date()),1000);await window.XCMGOfflineSync?.checkConnection?.();await hydrateRemoteCache();await loadAuth();if(currentUser)startSession();else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js').catch(()=>{});setTimeout(flushOfflineQueue,1200)}
+  async function init(){
+    window.addEventListener('beforeunload',flushAutoTurnSave);
+    window.addEventListener('online',()=>setTimeout(flushOfflineQueue,700));
+    let autoFlushRunning=false;
+    window.addEventListener('xcmg-sync-status',event=>{
+      const d=event.detail||{};
+      if(!d.online||d.checking||d.syncing||Number(d.pending||0)<1||autoFlushRunning)return;
+      autoFlushRunning=true;
+      setTimeout(()=>Promise.resolve(flushOfflineQueue()).finally(()=>{autoFlushRunning=false}),400);
+    });
+    setupSelects();
+    bind();
+    $('#reportDate').value=new Date().toISOString().slice(0,10);
+    setInterval(()=>$('#clock').textContent=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'medium'}).format(new Date()),1000);
+    await window.XCMGOfflineSync?.checkConnection?.();
+    // Envia pendências locais antes de puxar o remoto, para não perder alterações offline.
+    await flushOfflineQueue();
+    await hydrateRemoteCache();
+    await loadAuth();
+    if(currentUser)startSession();
+    else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}
+    // Registro do Service Worker fica centralizado em js/pwa.js.
+    setTimeout(flushOfflineQueue,1200);
+  }
   init();
 })();

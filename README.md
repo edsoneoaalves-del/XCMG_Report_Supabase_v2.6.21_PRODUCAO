@@ -47,3 +47,11 @@ A URL e a chave pública do Supabase estão em `js/app.js`. A chave `publishable
 - Ao abrir `index.html` diretamente pelo Explorador (`file://`), o navegador não permite Service Worker nem heartbeat HTTP. Nesse modo, o indicador acompanha `navigator.onLine` e os eventos online/offline.
 - Em Vercel, localhost ou outro servidor HTTP/HTTPS, o indicador usa o arquivo `connectivity-check.txt` sem cache para validar a conexão real.
 - Para validar a PWA e a sincronização completa, teste pela URL da Vercel ou por um servidor local, nunca apenas clicando duas vezes no `index.html`.
+
+
+## v2.8.11
+- Restaura a abertura offline do PWA.
+- Mantém a correção de login da v2.8.9.
+- Remove o parâmetro `?source=pwa` da URL inicial.
+- Torna a instalação do Service Worker tolerante a falhas individuais.
+- Armazena a biblioteca Supabase para uso offline.

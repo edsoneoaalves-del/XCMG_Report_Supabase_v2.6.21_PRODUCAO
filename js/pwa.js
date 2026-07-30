@@ -11,10 +11,11 @@
   const isMobile = window.matchMedia('(max-width: 800px)').matches;
   const dismissedAt = Number(localStorage.getItem('xcmg_pwa_prompt_dismissed') || 0);
   const canShow = Date.now() - dismissedAt > 7 * 24 * 60 * 60 * 1000;
+  const isFileProtocol = window.location.protocol === 'file:';
   let deferredPrompt = null;
 
   const showBanner = () => {
-    if (!banner || !isMobile || isStandalone || !canShow) return;
+    if (!banner || !isMobile || isStandalone || !canShow || isFileProtocol) return;
     banner.classList.remove('hidden');
     document.body.classList.add('pwa-banner-visible');
   };
@@ -56,16 +57,31 @@
     localStorage.setItem('xcmg_pwa_installed', '1');
   });
 
-  if (isIOS && isMobile && !isStandalone && canShow) {
+  if (isIOS && isMobile && !isStandalone && canShow && !isFileProtocol) {
     installBtn.textContent = 'Como instalar';
     window.setTimeout(showBanner, 1800);
   }
 
-  if ('serviceWorker' in navigator) {
+  // Service Worker não funciona em file://; registra apenas em HTTP/HTTPS.
+  if ('serviceWorker' in navigator && !isFileProtocol) {
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+        const swUrl = new URL('service-worker.js', window.location.href);
+        const registration = await navigator.serviceWorker.register(swUrl.href, {
+          scope: new URL('./', window.location.href).href
+        });
         registration.update().catch(() => {});
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          worker?.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              worker.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
       } catch (error) {
         console.warn('Não foi possível registrar o modo PWA.', error);
       }
