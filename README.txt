@@ -163,3 +163,9 @@ Versão 2.6.21 — Revisão para produção e dispositivos móveis
 - Ajustes de layout para Android e iPhone, incluindo safe area e campos sem zoom automático.
 - Cache do PWA atualizado.
 - Arquivos de GitHub e Vercel revisados.
+
+ATUALIZAÇÃO v2.8.8 — MOBILE COMPACT
+- Interface do computador preservada.
+- Ajustes aplicados somente em telas de até 800px.
+- Dashboard, formulários, cartões, filtros e barra inferior mais compactos.
+- Nenhuma alteração em Supabase, autenticação, banco, relatórios ou sincronização.
