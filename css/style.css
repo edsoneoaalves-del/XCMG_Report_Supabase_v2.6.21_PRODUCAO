@@ -922,8 +922,8 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
 @media (max-width:390px){
   .sidebar .nav-item{flex-basis:60px!important;min-width:60px!important}
   .sidebar .nav-item span{font-size:8px!important}
-  .top-actions #logoutBtn{font-size:0;width:42px;padding:0}
-  .top-actions #logoutBtn::after{content:"↪";font-size:20px}
+  .top-actions #logoutBtn{font-size:10px;width:auto;padding:6px 9px}
+  .top-actions #logoutBtn::after{content:none;display:none}
 }
 
 /* ===== XCMG Report v2.7 — instalação PWA (somente celular) ===== */
