@@ -2,7 +2,11 @@ const VERSION = '2.8.7';
 // Versão do cache incrementada (independente da versão do app) para forçar a
 // troca completa de qualquer cache anterior, inclusive de instalações feitas
 // antes da correção do App Shell e do start_url.
-const CACHE_VERSION = 'v2';
+// v3: corrige o bug real que causava ERR_FAILED no PWA instalado (ver
+// toCacheable() abaixo) — index.html/offline.html nunca eram armazenados no
+// cache porque a Vercel (cleanUrls) redireciona "*.html" e a Cache API rejeita
+// respostas marcadas como "redirected".
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `xcmg-static-${VERSION}-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `xcmg-runtime-${VERSION}-${CACHE_VERSION}`;
 const LOCAL_ASSETS = [
@@ -31,11 +35,30 @@ function toAbsolute(url) {
   return new URL(url, self.registration.scope).href;
 }
 
+// A Vercel (por causa de "cleanUrls": true em vercel.json) responde a
+// "/index.html" e "/offline.html" com um redirecionamento 308 para "/" e
+// "/offline". O fetch() segue esse redirecionamento automaticamente, mas a
+// resposta final fica marcada como response.redirected === true — e a Cache
+// API PROÍBE armazenar uma resposta redirecionada (cache.put() rejeita com
+// TypeError). Sem este ajuste, index.html/offline.html nunca eram gravados no
+// cache em produção (embora funcionasse no teste local, que não redireciona
+// URLs), e o App Shell ficava sem o arquivo principal para servir offline.
+// Reconstruir uma Response equivalente e não-redirecionada resolve isso.
+async function toCacheable(response) {
+  if (!response || !response.redirected) return response;
+  const body = await response.blob();
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+}
+
 async function cacheAsset(cache, url, options) {
   try {
     const response = await fetch(url, options);
     if (response && response.ok) {
-      await cache.put(url, response.clone());
+      await cache.put(url, await toCacheable(response));
       return true;
     }
   } catch {}
@@ -121,7 +144,7 @@ async function handleNavigation(event, indexUrl, offlineUrl) {
           const response = await fetch(event.request);
           if (response && response.ok) {
             const cache = await caches.open(RUNTIME_CACHE);
-            await cache.put(indexUrl, response.clone());
+            await cache.put(indexUrl, await toCacheable(response.clone()));
           }
         } catch {}
       })());
@@ -135,7 +158,7 @@ async function handleNavigation(event, indexUrl, offlineUrl) {
     if (response && response.ok) {
       try {
         const cache = await caches.open(RUNTIME_CACHE);
-        await cache.put(indexUrl, response.clone());
+        await cache.put(indexUrl, await toCacheable(response.clone()));
       } catch {}
     }
     return response;
@@ -210,7 +233,7 @@ self.addEventListener('fetch', event => {
         const response = await fetch(request);
         if (response.ok) {
           const cache = await caches.open(RUNTIME_CACHE);
-          await cache.put(request, response.clone());
+          await cache.put(request, await toCacheable(response.clone()));
         }
         return response;
       } catch {
@@ -222,7 +245,7 @@ self.addEventListener('fetch', event => {
       event.waitUntil(fetch(request).then(async response => {
         if (response.ok) {
           const cache = await caches.open(RUNTIME_CACHE);
-          await cache.put(request, response.clone());
+          await cache.put(request, await toCacheable(response.clone()));
         }
       }).catch(() => {}));
       return cached;
@@ -232,7 +255,7 @@ self.addEventListener('fetch', event => {
       const response = await fetch(request);
       if (response.ok) {
         const cache = await caches.open(RUNTIME_CACHE);
-        await cache.put(request, response.clone());
+        await cache.put(request, await toCacheable(response.clone()));
       }
       return response;
     } catch {

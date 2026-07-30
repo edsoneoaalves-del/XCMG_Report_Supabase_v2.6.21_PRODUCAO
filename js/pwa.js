@@ -64,45 +64,47 @@
 
   // Service Worker não funciona em file://; registra apenas em HTTP/HTTPS.
   if ('serviceWorker' in navigator && !isFileProtocol) {
-    // Quando um novo Service Worker assume o controle (após atualização),
-    // a aba recarrega uma única vez para garantir que o app e o cache
-    // offline estejam sempre na versão mais recente e completa.
-    let controllerChanged = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (controllerChanged) return;
-      controllerChanged = true;
-      if (navigator.serviceWorker.controller) window.location.reload();
-    });
+    const SW_URL = new URL('/service-worker.js', window.location.origin).href;
 
-    const registerServiceWorker = async () => {
+    // Remove registros órfãos de versões antigas do app (escopo ou script
+    // diferentes do atual) antes de registrar o Service Worker vigente. Um
+    // registro esquecido de uma versão anterior pode permanecer ativo no
+    // navegador do usuário mesmo depois de publicarmos correções, e nunca é
+    // removido automaticamente — isso pode deixar o dispositivo instalado
+    // preso a uma lógica antiga de cache/navegação.
+    const removeForeignRegistrations = async () => {
       try {
-        // Caminho e escopo absolutos (raiz do site), iguais ao start_url e ao
-        // scope do manifest.json. Isso garante que o Service Worker controle
-        // qualquer navegação dentro do domínio (/, /index.html, /?qualquer),
-        // independentemente da URL exata usada para abrir o app instalado.
-        const registration = await navigator.serviceWorker.register('/service-worker.js', {
-          scope: '/'
-        });
-        registration.update().catch(() => {});
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-        registration.addEventListener('updatefound', () => {
-          const worker = registration.installing;
-          worker?.addEventListener('statechange', () => {
-            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-              worker.postMessage({ type: 'SKIP_WAITING' });
-            }
-          });
-        });
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.allSettled(
+          registrations
+            .filter(reg => {
+              const scriptUrls = [reg.active, reg.installing, reg.waiting]
+                .map(worker => worker?.scriptURL)
+                .filter(Boolean);
+              return scriptUrls.length > 0 && !scriptUrls.includes(SW_URL);
+            })
+            .map(reg => reg.unregister())
+        );
       } catch (error) {
-        console.warn('Não foi possível registrar o modo PWA.', error);
+        console.warn('Não foi possível verificar registros antigos do Service Worker.', error);
       }
     };
 
-    // Registra o quanto antes: quanto mais cedo o cache offline for
-    // preenchido, menor o risco de o usuário ficar sem internet antes de o
-    // app terminar de se preparar para funcionar offline.
+    // Registro único e simples, sem verificação de atualização forçada, sem
+    // mensagens de SKIP_WAITING e sem reload automático. O próprio
+    // service-worker.js já ativa e assume o controle das próximas
+    // navegações sozinho quando uma nova versão é publicada; a aba em uso
+    // continua funcionando normalmente, sem ser recarregada ou fechada.
+    // updateViaCache: 'none' garante que o navegador nunca sirva uma cópia
+    // antiga do service-worker.js (ou de scripts importados por ele) a partir
+    // do HTTP cache ao verificar atualizações.
+    const registerServiceWorker = async () => {
+      await removeForeignRegistrations();
+      navigator.serviceWorker
+        .register('/service-worker.js', { scope: '/', updateViaCache: 'none' })
+        .catch(error => console.warn('Não foi possível registrar o modo PWA.', error));
+    };
+
     if (document.readyState === 'complete') registerServiceWorker();
     else window.addEventListener('load', registerServiceWorker);
   }
