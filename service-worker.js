@@ -45,12 +45,38 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
+    const staleKeys = keys.filter(key => key.startsWith('xcmg-') && ![STATIC_CACHE, RUNTIME_CACHE].includes(key));
+
+    // Autocorreção: se a instalação desta versão não conseguiu buscar algum
+    // arquivo essencial (ex.: rede instável durante a atualização), o app
+    // ficaria sem offline funcional assim que as versões antigas do cache
+    // fossem apagadas. Antes de apagar, garante que cada arquivo essencial
+    // exista na versão atual, recuperando da rede ou, na falta dela, de uma
+    // versão anterior do cache.
+    const currentCache = await caches.open(STATIC_CACHE);
+    await Promise.allSettled(LOCAL_ASSETS.map(async url => {
+      const absolute = toAbsolute(url);
+      const alreadyCached = await currentCache.match(absolute, { ignoreSearch: true });
+      if (alreadyCached) return;
+      try {
+        const response = await fetch(absolute, { cache: 'reload' });
+        if (response.ok) {
+          await currentCache.put(absolute, response.clone());
+          return;
+        }
+      } catch {}
+      for (const staleKey of staleKeys) {
+        const staleCache = await caches.open(staleKey);
+        const staleResponse = await staleCache.match(absolute, { ignoreSearch: true });
+        if (staleResponse) {
+          await currentCache.put(absolute, staleResponse.clone());
+          return;
+        }
+      }
+    }));
+
     // Remove apenas caches de outras versões; mantém a versão ativa intacta.
-    await Promise.all(
-      keys
-        .filter(key => key.startsWith('xcmg-') && ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
-        .map(key => caches.delete(key))
-    );
+    await Promise.all(staleKeys.map(key => caches.delete(key)));
     await self.clients.claim();
   })());
 });

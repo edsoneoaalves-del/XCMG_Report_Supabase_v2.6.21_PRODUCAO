@@ -64,7 +64,17 @@
 
   // Service Worker não funciona em file://; registra apenas em HTTP/HTTPS.
   if ('serviceWorker' in navigator && !isFileProtocol) {
-    window.addEventListener('load', async () => {
+    // Quando um novo Service Worker assume o controle (após atualização),
+    // a aba recarrega uma única vez para garantir que o app e o cache
+    // offline estejam sempre na versão mais recente e completa.
+    let controllerChanged = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (controllerChanged) return;
+      controllerChanged = true;
+      if (navigator.serviceWorker.controller) window.location.reload();
+    });
+
+    const registerServiceWorker = async () => {
       try {
         const swUrl = new URL('service-worker.js', window.location.href);
         const registration = await navigator.serviceWorker.register(swUrl.href, {
@@ -85,6 +95,12 @@
       } catch (error) {
         console.warn('Não foi possível registrar o modo PWA.', error);
       }
-    });
+    };
+
+    // Registra o quanto antes: quanto mais cedo o cache offline for
+    // preenchido, menor o risco de o usuário ficar sem internet antes de o
+    // app terminar de se preparar para funcionar offline.
+    if (document.readyState === 'complete') registerServiceWorker();
+    else window.addEventListener('load', registerServiceWorker);
   }
 })();
