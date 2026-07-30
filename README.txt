@@ -169,3 +169,11 @@ ATUALIZAÇÃO v2.8.8 — MOBILE COMPACT
 - Ajustes aplicados somente em telas de até 800px.
 - Dashboard, formulários, cartões, filtros e barra inferior mais compactos.
 - Nenhuma alteração em Supabase, autenticação, banco, relatórios ou sincronização.
+
+ATUALIZAÇÃO v2.8.9 — MOBILE DENSITY
+- Alterações exclusivas para telas de celular.
+- Layout desktop preservado.
+- Dashboard mais compacto para exibir seis equipamentos de manutenção na mesma tela.
+- Tela Equipamentos reduzida em aproximadamente 15%, sem alterar sua organização.
+- Ocultado no celular o botão secundário do cabeçalho que causava duplicidade visual com "Sair".
+- Supabase, autenticação, banco, relatórios e sincronização mantidos.

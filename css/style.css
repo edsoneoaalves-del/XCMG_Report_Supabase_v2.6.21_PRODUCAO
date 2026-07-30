@@ -1020,3 +1020,52 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
   .sidebar .nav-item{flex-basis:51px!important;min-width:51px!important}
   .sidebar .nav-item span{font-size:7px!important}
 }
+
+/* ===== v2.8.9 MOBILE DENSITY — somente celular, sem alterar o layout ===== */
+@media (max-width:800px){
+  /* Mantém apenas um controle de saída no cabeçalho mobile */
+  #themeBtn{display:none!important}
+
+  /* Dashboard: compactação adicional para exibir 6 itens de manutenção na mesma tela */
+  #page-dashboard .stats{gap:5px!important;margin-bottom:6px!important}
+  #page-dashboard .stat{min-height:68px!important;padding:7px 8px 6px!important;border-radius:10px!important}
+  #page-dashboard .stat .label{font-size:7px!important;line-height:1.05!important}
+  #page-dashboard .stat .value{font-size:21px!important;margin-top:5px!important}
+  #page-dashboard .stat .hint{font-size:7px!important;line-height:1.08!important;margin-top:4px!important}
+  #page-dashboard .panel{padding:8px!important;margin-bottom:6px!important}
+  #page-dashboard .panel-head{margin-bottom:5px!important}
+  #page-dashboard .panel-head h2,#page-dashboard .panel h2{font-size:11px!important;line-height:1.12!important}
+  #page-dashboard .eyebrow{font-size:6.5px!important;margin-bottom:2px!important}
+  #page-dashboard .maintenance-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}
+  #page-dashboard .maintenance-item{min-height:42px!important;padding:5px 6px!important;border-radius:8px!important;gap:3px!important}
+  #page-dashboard .maintenance-item strong{font-size:10px!important;line-height:1.05!important}
+  #page-dashboard .maintenance-item span{font-size:7px!important;line-height:1.05!important;margin-top:2px!important}
+  #page-dashboard .maintenance-item small{font-size:7px!important;line-height:1.05!important;margin-top:2px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+  /* Tela Equipamentos: cerca de 15% menor, preservando a disposição atual */
+  #page-equipamentos .toolbar,.toolbar{gap:6px!important;margin-bottom:7px!important}
+  .toolbar .search,.toolbar select,.toolbar .btn{min-height:33px!important;border-radius:9px!important}
+  .search{padding:0 8px!important}
+  .search input{min-height:31px!important;padding-top:5px!important;padding-bottom:5px!important;font-size:11px!important}
+  #page-equipamentos .toolbar select{min-height:33px!important;padding:5px 8px!important;font-size:10.5px!important}
+  #newEquipmentBtn{min-height:34px!important;padding:6px 9px!important;font-size:11px!important;border-radius:9px!important}
+  .equipment-table tbody{gap:6px!important}
+  .equipment-table tbody tr{padding:7px!important;border-radius:10px!important}
+  .equipment-table td,.equipment-id-cell{grid-template-columns:75px minmax(0,1fr)!important;gap:5px!important;padding:4px 0!important}
+  .equipment-table td::before{font-size:6.5px!important;line-height:1.05!important}
+  .equipment-id-cell strong{font-size:16px!important}
+  .equipment-id-cell small{font-size:8.5px!important}
+  .status-buttons{gap:5px!important}
+  .status-dot{width:27px!important;height:27px!important;flex-basis:27px!important;font-size:12px!important}
+  .quick-field,.client-quick-field,.substitute-quick-field{min-height:31px!important;padding:5px 8px!important;font-size:11px!important;border-radius:8px!important}
+  .fuel-edit{gap:4px!important}
+  .update-control{min-height:31px!important;padding:5px 8px!important;font-size:8.5px!important;border-radius:8px!important}
+  .row-actions{grid-template-columns:1fr 1fr 31px!important;gap:4px!important}
+  .row-actions .btn{min-height:31px!important;padding:5px 4px!important;font-size:8.5px!important;border-radius:8px!important}
+  .row-actions .icon-delete{width:31px!important;height:31px!important;min-height:31px!important}
+}
+
+@media (max-width:390px){
+  #page-dashboard .maintenance-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .equipment-table td,.equipment-id-cell{grid-template-columns:70px minmax(0,1fr)!important}
+}
