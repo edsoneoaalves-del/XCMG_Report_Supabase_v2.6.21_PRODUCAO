@@ -76,9 +76,12 @@
 
     const registerServiceWorker = async () => {
       try {
-        const swUrl = new URL('service-worker.js', window.location.href);
-        const registration = await navigator.serviceWorker.register(swUrl.href, {
-          scope: new URL('./', window.location.href).href
+        // Caminho e escopo absolutos (raiz do site), iguais ao start_url e ao
+        // scope do manifest.json. Isso garante que o Service Worker controle
+        // qualquer navegação dentro do domínio (/, /index.html, /?qualquer),
+        // independentemente da URL exata usada para abrir o app instalado.
+        const registration = await navigator.serviceWorker.register('/service-worker.js', {
+          scope: '/'
         });
         registration.update().catch(() => {});
         if (registration.waiting) {

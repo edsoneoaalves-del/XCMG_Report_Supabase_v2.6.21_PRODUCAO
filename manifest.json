@@ -5,7 +5,7 @@
   "description": "Gestão operacional e geração de relatórios da frota XCMG.",
   "lang": "pt-BR",
   "dir": "ltr",
-  "start_url": "./?source=pwa",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
@@ -37,13 +37,13 @@
     {
       "name": "Equipamentos",
       "short_name": "Equipamentos",
-      "url": "./?source=pwa&page=equipamentos",
+      "url": "./?page=equipamentos",
       "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]
     },
     {
       "name": "Relatórios",
       "short_name": "Relatórios",
-      "url": "./?source=pwa&page=relatorios",
+      "url": "./?page=relatorios",
       "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]
     }
   ]
