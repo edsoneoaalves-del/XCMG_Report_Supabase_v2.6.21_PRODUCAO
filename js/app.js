@@ -268,31 +268,32 @@
     }
     return sha256Fallback(data);
   }
-  let authBootstrapOnly=false;
   async function loadAuth(){
     try{auth=JSON.parse(localStorage.getItem(AUTH_KEY))||{users:[],currentUserId:null}}catch{auth={users:[],currentUserId:null}}
     if(!Array.isArray(auth.users)||!auth.users.length){
       try{auth=JSON.parse(localStorage.getItem(AUTH_BACKUP_KEY))||{users:[],currentUserId:null}}catch{auth={users:[],currentUserId:null}}
     }
-    // Online: tenta recuperar a lista remota sem publicar nada nesta abertura.
+    // Online: recupera a lista remota sem publicar nada nesta abertura.
     if((!Array.isArray(auth.users)||!auth.users.length)&&connectionIsOnline()){
       const remote=await remoteGet(AUTH_KEY);
       if(remote&&Array.isArray(remote.users)&&remote.users.length){
         auth={...remote,currentUserId:null};
       }
     }
-    if(!Array.isArray(auth.users)||!auth.users.length){
-      // Bootstrap local apenas se não houver usuários. Nunca envia ao Supabase nesta etapa.
-      auth={users:[{id:newId(),name:'Edson Alves',team:'Turma D',username:'edson',passwordHash:await hashPassword('1234'),role:'admin',createdAt:new Date().toISOString()}],currentUserId:null};
-      authBootstrapOnly=true;
-    }else{
-      authBootstrapOnly=false;
-    }
-    // A lista local é preservada para permitir autenticação sem internet.
+    if(!Array.isArray(auth.users))auth.users=[];
+    // Nunca recria automaticamente o usuário "edson", nunca reseta senhas e
+    // nunca sobrescreve o Supabase durante o bootstrap desta tela.
     auth.currentUserId=null;
     localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
-    if(Array.isArray(auth.users)&&auth.users.length)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(auth));
+    if(auth.users.length)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
     currentUser=null;
+  }
+  function saveAuth(){
+    localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
+    if(Array.isArray(auth.users)&&auth.users.length){
+      localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
+      remoteSet(AUTH_KEY,auth);
+    }
   }
   async function ensureAuthFromRemote(){
     if(!connectionIsOnline())return false;
@@ -301,28 +302,12 @@
     const previousUsername=currentUser?.username;
     const previousId=currentUser?.id;
     auth={...remote,currentUserId:previousId||null};
-    authBootstrapOnly=false;
     localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
     localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
     if(previousId||previousUsername){
       currentUser=auth.users.find(u=>u.id===previousId)||auth.users.find(u=>u.username===previousUsername)||null;
     }
     return true;
-  }
-  async function publishAuthRemote(){
-    if(!Array.isArray(auth.users)||!auth.users.length)return;
-    if(authBootstrapOnly){
-      // Bootstrap local nunca deve sobrescrever usuários já existentes no Supabase.
-      if(!connectionIsOnline())return;
-      if(await ensureAuthFromRemote())return;
-      authBootstrapOnly=false;
-    }
-    remoteSet(AUTH_KEY,auth);
-  }
-  function saveAuth(){
-    localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
-    if(Array.isArray(auth.users)&&auth.users.length)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(auth));
-    publishAuthRemote();
   }
 
   function migrateEquipment(x){
@@ -710,7 +695,6 @@
     const name=$('#userFullName').value.trim(),team=$('#userTeam').value.trim(),username=$('#newUsername').value.trim().toLowerCase(),password=$('#newUserPassword').value;
     if(auth.users.some(u=>u.username.toLowerCase()===username)){alert('Este nome de usuário já existe.');return}
     const user={id:newId(),name,team,username,passwordHash:await hashPassword(password),role:'user',createdAt:new Date().toISOString()};
-    authBootstrapOnly=false;
     auth.users.push(user);saveAuth();localStorage.setItem(USER_KEY(user.id),JSON.stringify(clone(initial)));remoteSet(USER_KEY(user.id),clone(initial));closeUserModal();renderUsers();toast('Usuário criado com sucesso');
   }
   async function changeOwnPassword(e){
@@ -721,7 +705,6 @@
     if(await hashPassword(current)!==currentUser.passwordHash){alert('A senha atual está incorreta.');return}
     if(newPassword!==confirmPassword){alert('A confirmação da nova senha não confere.');return}
     if(newPassword.length<4){alert('A nova senha deve ter pelo menos 4 caracteres.');return}
-    authBootstrapOnly=false;
     currentUser.passwordHash=await hashPassword(newPassword);saveAuth();$('#changePasswordForm').reset();log('Senha alterada',`${currentUser.name} alterou a própria senha`);save();renderHistory();toast('Senha alterada com sucesso');
   }
   function openResetPasswordModal(userId){
@@ -762,7 +745,6 @@
       const remote=await remoteGet(AUTH_KEY);
       if(remote&&Array.isArray(remote.users)&&remote.users.length){
         auth={...remote,currentUserId:null};
-        authBootstrapOnly=false;
         localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
         localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(auth));
       }

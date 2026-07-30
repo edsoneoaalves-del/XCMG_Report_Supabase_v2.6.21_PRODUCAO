@@ -1,4 +1,4 @@
-const VERSION = '2.8.12';
+const VERSION = '2.8.7';
 const STATIC_CACHE = `xcmg-static-${VERSION}`;
 const RUNTIME_CACHE = `xcmg-runtime-${VERSION}`;
 const LOCAL_ASSETS = [
@@ -7,10 +7,10 @@ const LOCAL_ASSETS = [
   './offline.html',
   './manifest.json',
   './connectivity-check.txt',
-  './css/style.css?v=2.8.12',
-  './js/offline-sync.js?v=2.8.12',
-  './js/app.js?v=2.8.12',
-  './js/pwa.js?v=2.8.12',
+  './css/style.css?v=2.8.7',
+  './js/offline-sync.js?v=2.8.7',
+  './js/app.js?v=2.8.7',
+  './js/pwa.js?v=2.8.7',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
@@ -25,7 +25,7 @@ function toAbsolute(url) {
 }
 
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  // Pré-cache da nova versão sem interromper clientes ainda na versão anterior.
   event.waitUntil((async () => {
     const cache = await caches.open(STATIC_CACHE);
     // Um arquivo indisponível não pode cancelar toda a instalação do PWA.
@@ -38,13 +38,19 @@ self.addEventListener('install', event => {
       const response = await fetch(url, { mode: 'cors', cache: 'reload' });
       if (response.ok) await cache.put(url, response.clone());
     }));
+    await self.skipWaiting();
   })());
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(key => ![STATIC_CACHE, RUNTIME_CACHE].includes(key)).map(key => caches.delete(key)));
+    // Remove apenas caches de outras versões; mantém a versão ativa intacta.
+    await Promise.all(
+      keys
+        .filter(key => key.startsWith('xcmg-') && ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
+        .map(key => caches.delete(key))
+    );
     await self.clients.claim();
   })());
 });
@@ -59,6 +65,7 @@ self.addEventListener('fetch', event => {
   const rootUrl = toAbsolute('./');
   const offlineUrl = toAbsolute('./offline.html');
 
+  // O teste de conexão nunca pode usar cache nem resposta offline do Service Worker.
   if (url.origin === scopeUrl.origin && url.pathname === connectivityPath) {
     event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
@@ -80,7 +87,10 @@ self.addEventListener('fetch', event => {
           || (await caches.match('/', { ignoreSearch: true }))
           || (await caches.match(offlineUrl, { ignoreSearch: true }))
           || (await caches.match('/offline.html', { ignoreSearch: true }))
-          || new Response('Aplicativo indisponível offline.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+          || new Response('Aplicativo indisponível offline.', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+          });
       }
     })());
     return;
@@ -94,6 +104,7 @@ self.addEventListener('fetch', event => {
     const cached = await caches.match(request, { ignoreSearch: isSameOrigin });
     const isCriticalAsset = ['script', 'style', 'worker'].includes(request.destination) || isSupabaseLibrary;
 
+    // JS/CSS/SDK: rede primeiro para publicar correções; cache para PWA offline.
     if (isCriticalAsset) {
       try {
         const response = await fetch(request);

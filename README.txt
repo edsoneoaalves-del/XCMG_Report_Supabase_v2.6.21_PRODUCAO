@@ -163,9 +163,3 @@ Versão 2.6.21 — Revisão para produção e dispositivos móveis
 - Ajustes de layout para Android e iPhone, incluindo safe area e campos sem zoom automático.
 - Cache do PWA atualizado.
 - Arquivos de GitHub e Vercel revisados.
-
-
-VERSÃO 2.8.9
-- Corrigido login no PWA sem sobrescrever usuários do Supabase.
-- A abertura do sistema não publica mais usuário padrão automaticamente.
-- Recuperação: caso a lista já tenha sido substituída, use edson / 1234 e altere a senha nas configurações.
