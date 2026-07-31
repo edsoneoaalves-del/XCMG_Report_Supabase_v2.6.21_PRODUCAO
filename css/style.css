@@ -1069,3 +1069,27 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
   #page-dashboard .maintenance-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   .equipment-table td,.equipment-id-cell{grid-template-columns:70px minmax(0,1fr)!important}
 }
+
+
+/* Histórico da Manutenção — módulo independente v2.9.0 */
+.maintenance-history-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+.maintenance-history-head h2{margin:0 0 4px}.maintenance-history-search{max-width:420px;width:100%}
+.maintenance-history-list{display:grid;gap:16px}.maintenance-history-card .panel-head{align-items:flex-start}
+.maintenance-history-card .panel-head small{display:block;margin-top:5px;color:var(--muted)}
+.maintenance-history-rows{display:grid;gap:8px}.maintenance-history-row{display:grid;grid-template-columns:minmax(130px,220px) 1fr;gap:14px;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+.maintenance-history-row strong{color:var(--text)}.maintenance-history-row span{color:var(--muted)}
+.maintenance-history-total{margin-top:12px;text-align:right;color:var(--muted)}
+@media(max-width:720px){.maintenance-history-head{align-items:stretch;flex-direction:column}.maintenance-history-search{max-width:none}.maintenance-history-card .panel-head{gap:12px}.maintenance-history-card .panel-head .actions{width:100%;display:grid;grid-template-columns:1fr 1fr}.maintenance-history-row{grid-template-columns:1fr;gap:4px}}
+
+/* v2.9.2 — dados exclusivos do Histórico de Manutenção */
+.maintenance-details{border:1px solid var(--line);background:var(--surface2);border-radius:13px;padding:14px;margin-top:2px}
+.maintenance-details-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.maintenance-details-head h3{margin:2px 0 0;font-size:15px;color:var(--text)}
+.maintenance-details-head small{color:var(--muted);text-align:right}
+.maintenance-details-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.maintenance-details-grid label{color:var(--muted);font-size:12px}
+@media(max-width:520px){.maintenance-details{padding:12px}.maintenance-details-head{align-items:flex-start;flex-direction:column;gap:3px}.maintenance-details-head small{text-align:left}.maintenance-details-grid{grid-template-columns:1fr}}
+
+/* v2.9.3 — Apoio à Manutenção restrito ao histórico */
+.maintenance-details-grid label.hidden{display:none!important}
+.maintenance-history-row span b{color:var(--text)}

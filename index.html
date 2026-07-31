@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=2.8.10">
+  <link rel="stylesheet" href="css/style.css?v=2.9.3">
 </head>
 <body>
   <section class="pwa-install-banner hidden" id="pwaInstallBanner" aria-live="polite">
@@ -56,6 +56,7 @@
         <button class="nav-item" data-page="equipamentos">▤ <span>Equipamentos</span></button>
         <button class="nav-item" data-page="relatorios">▧ <span>Relatórios</span></button>
         <button class="nav-item" data-page="historico">◷ <span>Histórico</span></button>
+        <button class="nav-item" data-page="manutencao">🔧 <span>Histórico Manutenção</span></button>
         <button class="nav-item admin-only" data-page="usuarios">♙ <span>Usuários</span></button>
         <button class="nav-item" data-page="configuracoes">⚙ <span>Configurações</span></button>
       </nav>
@@ -123,6 +124,13 @@
         <div class="timeline" id="historyList"></div>
       </section>
 
+      <section class="page" id="page-manutencao">
+        <div class="maintenance-history-head">
+          <div><h2>Histórico da Manutenção</h2><p class="muted">Registros gerados somente no fechamento do relatório operacional, organizados por data e turma.</p></div>
+          <div class="search maintenance-history-search"><span>⌕</span><input id="maintenanceHistorySearch" placeholder="Pesquisar equipamento, data ou turma..."></div>
+        </div>
+        <div class="maintenance-history-list" id="maintenanceHistoryList"></div>
+      </section>
 
       <section class="page" id="page-usuarios">
         <div class="toolbar">
@@ -168,6 +176,16 @@
           <label>Combustível (%)<input type="number" min="0" max="100" id="eqFuel" value="100"></label>
           <label class="full">Condição / posicionamento<input id="eqCondition" placeholder="com gaiola, patolado, carregado com contrapeso..."></label>
           <label class="full">Observação<textarea id="eqNotes" rows="3"></textarea></label>
+          <section class="maintenance-details full hidden" id="maintenanceDetailsSection">
+            <div class="maintenance-details-head">
+              <div><span class="eyebrow">INFORMAÇÃO INTERNA</span><h3>🔧 Apoio à Manutenção</h3></div>
+              <small>Uso exclusivo do Histórico de Manutenção</small>
+            </div>
+            <div class="maintenance-details-grid">
+              <label id="maintenanceLocationField">Local da manutenção*<input id="eqMaintenanceLocation" placeholder="Ex.: Base Externa XCMG"></label>
+              <label id="maintenanceReasonField">Motivo da manutenção*<textarea id="eqMaintenanceReason" rows="2" placeholder="Ex.: Preventiva de 500 horas, vazamento hidráulico ou pneu furado"></textarea></label>
+            </div>
+          </section>
           <datalist id="clientOptions">
             <option value="Pool"><option value="Truckless/GPA"><option value="Vulca"><option value="Sotreq"><option value="Elétrica"><option value="Perfuração"><option value="Escavação"><option value="CMD"><option value="Preventiva Truckless"><option value="Oficina">
           </datalist>
@@ -213,8 +231,8 @@
 
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/offline-sync.js?v=2.8.10"></script>
-  <script src="js/app.js?v=2.8.10"></script>
-  <script src="js/pwa.js?v=2.8.10" defer></script>
+  <script src="js/offline-sync.js?v=2.9.3"></script>
+  <script src="js/app.js?v=2.9.3"></script>
+  <script src="js/pwa.js?v=2.9.3" defer></script>
 </body>
 </html>

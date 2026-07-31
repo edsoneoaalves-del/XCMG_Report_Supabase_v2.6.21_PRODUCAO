@@ -4,6 +4,7 @@
   const AUTH_KEY='xcmg_report_auth_v1';
   const AUTH_BACKUP_KEY='xcmg_report_auth_backup_v1';
   const TURN_KEY='xcmg_report_last_turn_v1';
+  const MAINT_HISTORY_KEY='xcmg_report_maintenance_history_v1';
   const USER_KEY=id=>`xcmg_report_user_${id}`;
   const SUPABASE_URL='https://dqslcjxetirfhcftaqjz.supabase.co';
   const SUPABASE_KEY='sb_publishable_hRARb5cN-tFqp0uJDpXFCA_ASKtJopY';
@@ -87,7 +88,7 @@
   }
   async function hydrateRemoteCache(){
     const pendingKeys=new Set(await window.XCMGOfflineSync?.pendingKeys?.()||[]);
-    const keys=[AUTH_KEY,TURN_KEY];
+    const keys=[AUTH_KEY,TURN_KEY,MAINT_HISTORY_KEY];
     for(const key of keys){
       if(pendingKeys.has(key))continue;
       const value=await remoteGet(key);
@@ -195,6 +196,7 @@
     equipments:[],history:[],reports:[]
   };
   let state=clone(initial);
+  let maintenanceHistory=[];
   let auth={users:[],currentUserId:null};
   let currentUser=null;
   let autoTurnEnabled=false;
@@ -321,6 +323,8 @@
       substitute:x.substitute||'',
       condition:x.condition||'',
       notes:x.notes||'',
+      maintenanceLocation:x.maintenanceLocation||'',
+      maintenanceReason:x.maintenanceReason||'',
       updatedAt:x.updatedAt||new Date().toISOString(),
       updateControl:x.updateControl==='updated'?'updated':'pending'
     };
@@ -369,6 +373,8 @@
   function updateTurnPanel(){}
   function esc(v=''){return String(v).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
   function fmtDate(v){return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(v))}
+  function loadMaintenanceHistory(){try{maintenanceHistory=JSON.parse(localStorage.getItem(MAINT_HISTORY_KEY))||[]}catch{maintenanceHistory=[]}purgeMaintenanceHistory(false)}
+  function purgeMaintenanceHistory(persist=true){const limit=Date.now()-90*24*60*60*1000;maintenanceHistory=(Array.isArray(maintenanceHistory)?maintenanceHistory:[]).filter(x=>new Date(x.savedAt||x.date||0).getTime()>=limit);if(persist){localStorage.setItem(MAINT_HISTORY_KEY,JSON.stringify(maintenanceHistory));remoteSet(MAINT_HISTORY_KEY,maintenanceHistory)}}
   function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
   function log(action,detail){state.history.unshift({id:newId(),action,detail,date:new Date().toISOString()});state.history=state.history.slice(0,500)}
   function applyTheme(){document.documentElement.classList.toggle('light',state.settings.theme==='light')}
@@ -414,8 +420,8 @@
     const suggested=DEFAULT_CLIENTS[prefix]||'';
     if(suggested&&(force||!$('#eqClient').value.trim()))$('#eqClient').value=suggested;
   }
-  const pageInfo={dashboard:['Dashboard','Visão geral da operação'],equipamentos:['Equipamentos','Cadastro e atualização da frota'],relatorios:['Relatórios','Geração automática para WhatsApp'],historico:['Histórico','Rastreabilidade das alterações'],usuarios:['Usuários','Cadastro exclusivo do administrador'],configuracoes:['Configurações','Preferências e segurança dos dados']};
-  function go(page){$$('.page').forEach(x=>x.classList.remove('active'));$(`#page-${page}`).classList.add('active');$$('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.page===page));$('#pageTitle').textContent=pageInfo[page][0];$('#pageSubtitle').textContent=pageInfo[page][1];$('#sidebar').classList.remove('open');if(page==='dashboard')renderDashboard();if(page==='equipamentos')renderEquipments();if(page==='historico')renderHistory();if(page==='relatorios')generateReport();if(page==='usuarios')renderUsers()}
+  const pageInfo={dashboard:['Dashboard','Visão geral da operação'],equipamentos:['Equipamentos','Cadastro e atualização da frota'],relatorios:['Relatórios','Geração automática para WhatsApp'],historico:['Histórico','Rastreabilidade das alterações'],manutencao:['Histórico Manutenção','Registros fechados por data e turma'],usuarios:['Usuários','Cadastro exclusivo do administrador'],configuracoes:['Configurações','Preferências e segurança dos dados']};
+  function go(page){$$('.page').forEach(x=>x.classList.remove('active'));$(`#page-${page}`).classList.add('active');$$('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.page===page));$('#pageTitle').textContent=pageInfo[page][0];$('#pageSubtitle').textContent=pageInfo[page][1];$('#sidebar').classList.remove('open');if(page==='dashboard')renderDashboard();if(page==='equipamentos')renderEquipments();if(page==='historico')renderHistory();if(page==='manutencao')renderMaintenanceHistory();if(page==='relatorios')generateReport();if(page==='usuarios')renderUsers()}
   function getMaintenanceItems(){
     // Manutenção = preventiva + corretiva + equipamentos substituídos.
     // Cada prefixo é contado uma única vez. Renovação do selo tem prioridade
@@ -430,17 +436,19 @@
     state.equipments.filter(x=>['Preventiva','Corretiva'].includes(x.status)).forEach(x=>{
       const key=String(x.prefix||'').trim().toUpperCase();
       if(!key||sealPrefixes.has(key))return;
-      items.set(key,{prefix:key,capacity:x.capacity||'',status:x.status,location:x.location||'',replacedBy:[]});
+      items.set(key,{prefix:key,capacity:x.capacity||'',status:x.status,location:x.location||'',maintenanceLocation:'',maintenanceReason:x.maintenanceReason||'',replacedBy:[]});
     });
     state.equipments.forEach(x=>{
       const sub=parseEquipmentLabel(x.substitute);
       if(!sub.prefix)return;
       const key=sub.prefix.trim().toUpperCase();
       if(sealPrefixes.has(key))return;
-      const current=items.get(key)||{prefix:key,capacity:sub.capacity||'',status:'Substituído',location:'',replacedBy:[]};
+      const current=items.get(key)||{prefix:key,capacity:sub.capacity||'',status:'Substituído',location:'',maintenanceLocation:'',maintenanceReason:'',replacedBy:[]};
       current.capacity=current.capacity||sub.capacity||'';
       const replacement=equipmentLabel(x.prefix,x.capacity);
       if(replacement&&!current.replacedBy.includes(replacement))current.replacedBy.push(replacement);
+      current.maintenanceLocation=current.maintenanceLocation||x.maintenanceLocation||'';
+      current.maintenanceReason=current.maintenanceReason||x.maintenanceReason||'';
       if(!current.status||current.status==='Substituído')current.status='Substituído';
       items.set(key,current);
     });
@@ -542,6 +550,18 @@
     x.status=value('status')||x.status;x.client=value('client').trim();x.location=value('location').trim();x.condition=condition;x.loadStatus='';
     x.fuel=Math.max(0,Math.min(100,Number(value('fuel'))||0));
     x.substitute=substitute.prefix?equipmentLabel(substitute.prefix,substitute.capacity):'';
+    const needsMaintenanceReason=Boolean(substitute.prefix)||['Preventiva','Corretiva'].includes(x.status);
+    if(!needsMaintenanceReason){x.maintenanceReason='';x.maintenanceLocation='';}
+    if(needsMaintenanceReason&&!String(x.maintenanceReason||'').trim()){
+      openModal(id);
+      alert('Preencha o Motivo da Manutenção em 🔧 Apoio à Manutenção. Essa informação será usada somente no Histórico de Manutenção.');
+      return;
+    }
+    if(substitute.prefix&&!String(x.maintenanceLocation||'').trim()){
+      openModal(id);
+      alert('Preencha o Local da Manutenção em 🔧 Apoio à Manutenção.');
+      return;
+    }
     x.updatedAt=new Date().toISOString();
     log('Equipamento atualizado',`${x.prefix} — ${x.status} em ${x.location}`);save();renderPrefixOptions();renderEquipments();renderDashboard();toast(`${x.prefix} atualizado com sucesso`);
   }
@@ -562,6 +582,17 @@
     $('#loadStatusField').classList.toggle('hidden',!isMunck);
     if(!isMunck)$('#eqLoadStatus').value='';
   }
+  function updateMaintenanceDetailsVisibility(){
+    const hasSubstitute=Boolean(parseEquipmentLabel($('#eqSubstitute').value).prefix);
+    const isMaintenanceStatus=['Preventiva','Corretiva'].includes($('#eqStatus').value);
+    const showSection=hasSubstitute||isMaintenanceStatus;
+    $('#maintenanceDetailsSection').classList.toggle('hidden',!showSection);
+    $('#maintenanceLocationField').classList.toggle('hidden',!hasSubstitute);
+    $('#eqMaintenanceLocation').required=hasSubstitute;
+    $('#eqMaintenanceReason').required=showSection;
+    if(!hasSubstitute)$('#eqMaintenanceLocation').value='';
+    if(!showSection)$('#eqMaintenanceReason').value='';
+  }
   function openModal(id){
     const x=state.equipments.find(e=>e.id===id);
     $('#equipmentId').value=x?.id||'';
@@ -577,7 +608,10 @@
     $('#eqFuel').value=x?.fuel??100;
     $('#eqCondition').value=x?.condition||'';
     $('#eqNotes').value=x?.notes||'';
+    $('#eqMaintenanceLocation').value=x?.maintenanceLocation||'';
+    $('#eqMaintenanceReason').value=x?.maintenanceReason||'';
     updateCategoryFields();
+    updateMaintenanceDetailsVisibility();
     $('#modalBackdrop').classList.remove('hidden');
   }
   function closeModal(){$('#modalBackdrop').classList.add('hidden');$('#equipmentForm').reset()}
@@ -587,6 +621,21 @@
     const selected=parseEquipmentLabel($('#eqPrefix').value);
     selected.prefix=normalizeEquipmentPrefix(selected.prefix);
     const substitute=parseEquipmentLabel($('#eqSubstitute').value);
+    const status=$('#eqStatus').value;
+    const needsMaintenanceReason=substitute.prefix||['Preventiva','Corretiva'].includes(status);
+    if(needsMaintenanceReason&&!$('#eqMaintenanceReason').value.trim()){
+      alert('Informe o motivo da manutenção. Essa informação será usada somente no Histórico de Manutenção.');
+      $('#maintenanceDetailsSection').classList.remove('hidden');
+      $('#eqMaintenanceReason').focus();
+      return;
+    }
+    if(substitute.prefix&&!$('#eqMaintenanceLocation').value.trim()){
+      alert('Informe o local da manutenção do equipamento substituído.');
+      $('#maintenanceDetailsSection').classList.remove('hidden');
+      $('#maintenanceLocationField').classList.remove('hidden');
+      $('#eqMaintenanceLocation').focus();
+      return;
+    }
     const duplicate=state.equipments.find(x=>x.id!==id&&normalizeEquipmentPrefix(x.prefix)===selected.prefix);
     if(duplicate){
       alert(`O equipamento ${selected.prefix} já está cadastrado. Não é permitido cadastrar o mesmo equipamento novamente.`);
@@ -599,7 +648,9 @@
       capacity:($('#eqCapacity').value.trim()||selected.capacity),status:$('#eqStatus').value,client:$('#eqClient').value.trim()||DEFAULT_CLIENTS[selected.prefix]||'',
       location:$('#eqLocation').value.trim(),loadStatus:$('#eqLoadStatus').value,
       substitute:substitute.prefix?equipmentLabel(substitute.prefix,substitute.capacity):'',
-      fuel:Number($('#eqFuel').value)||0,condition:$('#eqCondition').value.trim(),notes:$('#eqNotes').value.trim(),updatedAt:now,updateControl:id?(state.equipments.find(x=>x.id===id)?.updateControl||'pending'):'pending'
+      fuel:Number($('#eqFuel').value)||0,condition:$('#eqCondition').value.trim(),notes:$('#eqNotes').value.trim(),
+      maintenanceLocation:substitute.prefix?$('#eqMaintenanceLocation').value.trim():'',maintenanceReason:needsMaintenanceReason?$('#eqMaintenanceReason').value.trim():'',
+      updatedAt:now,updateControl:id?(state.equipments.find(x=>x.id===id)?.updateControl||'pending'):'pending'
     };
     if(id){const i=state.equipments.findIndex(x=>x.id===id);state.equipments[i]=data;log('Equipamento atualizado',`${data.prefix} — ${data.status} em ${data.location}`)}
     else{state.equipments.push(data);log('Equipamento cadastrado',`${data.prefix} — ${data.category}`)}
@@ -676,7 +727,49 @@
     return out;
   }
   function generateReport(){$('#reportOutput').value=reportText()}
-  function saveReport(){generateReport();const text=$('#reportOutput').value;state.reports.unshift({id:newId(),date:new Date().toISOString(),text});log('Relatório salvo','Relatório salvo com sucesso');save();saveTurnSnapshot('report');renderHistory();toast('Relatório salvo e liberado para o próximo turno')}
+  function maintenanceMessage(record){
+    const date=new Intl.DateTimeFormat('pt-BR').format(new Date(record.reportDate+'T12:00:00'));
+    let out=`*EQUIPAMENTOS EM MANUTENÇÃO – ${date} – ${String(record.team||'').toUpperCase()}*\n\n`;
+    if(!record.items.length)return out+'Nenhum equipamento em manutenção no fechamento do turno.';
+    out+=record.items.map(x=>{
+      const label=equipmentLabel(x.prefix,x.capacity);
+      if(x.replacedBy?.length){
+        const lines=[`🔴 *${label}* – Em manutenção`];
+        if(x.maintenanceLocation)lines.push(`📍 Local: ${x.maintenanceLocation}`);
+        if(x.maintenanceReason)lines.push(`🛠 Motivo: ${x.maintenanceReason}`);
+        lines.push(`   ↳ Substituído por: ${x.replacedBy.join(', ')}`);
+        return lines.join('\n');
+      }
+      const lines=[`🔴 *${label}* – ${x.status||'Em manutenção'}`];
+      if(x.maintenanceReason)lines.push(`🛠 Motivo: ${x.maintenanceReason}`);
+      return lines.join('\n');
+    }).join('\n');
+    out+=`\n\n*Total:* ${record.items.length} equipamento${record.items.length===1?'':'s'} em manutenção.`;
+    return out;
+  }
+  function saveMaintenanceSnapshot(){
+    const reportDate=$('#reportDate').value||new Date().toISOString().slice(0,10);
+    const team=$('#reportTeam').value.trim()||currentUser?.team||'Turma não informada';
+    const items=clone(getMaintenanceItems());
+    const existingIndex=maintenanceHistory.findIndex(x=>x.reportDate===reportDate&&String(x.team).trim().toLowerCase()===team.trim().toLowerCase());
+    const record={id:existingIndex>=0?maintenanceHistory[existingIndex].id:newId(),reportDate,team,savedAt:new Date().toISOString(),savedBy:currentUser?.name||'',items};
+    if(existingIndex>=0)maintenanceHistory.splice(existingIndex,1);
+    maintenanceHistory.unshift(record);
+    purgeMaintenanceHistory();
+    renderMaintenanceHistory();
+    return record;
+  }
+  function renderMaintenanceHistory(){
+    const host=$('#maintenanceHistoryList');if(!host)return;
+    const q=($('#maintenanceHistorySearch')?.value||'').trim().toLowerCase();
+    const list=maintenanceHistory.filter(r=>!q||[r.reportDate,r.team,r.savedBy,...r.items.flatMap(x=>[x.prefix,x.capacity,x.status,x.location,x.maintenanceLocation,x.maintenanceReason,...(x.replacedBy||[])])].join(' ').toLowerCase().includes(q));
+    host.innerHTML=list.map(r=>{
+      const date=new Intl.DateTimeFormat('pt-BR').format(new Date(r.reportDate+'T12:00:00'));
+      const rows=r.items.map(x=>{let detail='';if(x.replacedBy?.length){const parts=['<b>Em manutenção</b>'];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);parts.push(`<small>↳ Substituído por: ${esc(x.replacedBy.join(', '))}</small>`);detail=parts.join('<br>')}else{const parts=[`<b>${esc(x.status||'Em manutenção')}</b>`];if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);detail=parts.join('<br>')}return `<div class="maintenance-history-row"><strong>${esc(equipmentLabel(x.prefix,x.capacity))}</strong><span>${detail}</span></div>`}).join('')||'<div class="empty compact">Nenhum equipamento em manutenção neste fechamento.</div>';
+      return `<article class="panel maintenance-history-card"><div class="panel-head"><div><span class="eyebrow">${esc(date)}</span><h2>${esc(r.team)}</h2><small>Fechado por ${esc(r.savedBy||'usuário')} em ${fmtDate(r.savedAt)}</small></div><div class="actions"><button class="btn small" data-copy-maintenance="${r.id}">Copiar mensagem</button><button class="btn small" data-share-maintenance="${r.id}">Compartilhar</button></div></div><div class="maintenance-history-rows">${rows}</div><div class="maintenance-history-total">Total: <strong>${r.items.length}</strong></div></article>`;
+    }).join('')||'<div class="empty">Nenhum fechamento de manutenção registrado nos últimos 90 dias.</div>';
+  }
+  function saveReport(){generateReport();const text=$('#reportOutput').value;state.reports.unshift({id:newId(),date:new Date().toISOString(),text});log('Relatório salvo','Relatório salvo com sucesso');save();saveTurnSnapshot('report');saveMaintenanceSnapshot();renderHistory();toast('Relatório salvo e histórico da manutenção atualizado')}
   function renderHistory(){const q=$('#historySearch').value.trim().toLowerCase(),list=state.history.filter(x=>!q||`${x.action} ${x.detail}`.toLowerCase().includes(q));$('#historyList').innerHTML=list.map(h=>`<div class="timeline-item"><div class="timeline-date">${fmtDate(h.date)}</div><div><strong>${esc(h.action)}</strong><div class="muted">${esc(h.detail)}</div></div></div>`).join('')||'<div class="empty">Nenhum registro encontrado.</div>'}
   function loadSettingsForm(){$('#cfgCompany').value=state.settings.company;$('#cfgTitle').value=state.settings.title;$('#cfgFuelLimit').value=state.settings.fuelLimit}
   function renderUsers(){
@@ -765,7 +858,7 @@
     $('#currentUserName').textContent=currentUser.name;$('#currentUserTeam').textContent=currentUser.team;
     $$('.admin-only').forEach(el=>el.classList.toggle('hidden',currentUser.role!=='admin'));
     loadReportDefaults();
-    applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();generateReport();
+    applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();renderMaintenanceHistory();generateReport();
     localStorage.setItem(USER_KEY(currentUser.id),JSON.stringify(state));
     remoteSet(USER_KEY(currentUser.id),state);
     const last=getLastTurn();
@@ -777,13 +870,15 @@
   function bind(){
     $('#loginForm').onsubmit=login;$('#logoutBtn').onclick=logout;$('#newUserBtn').onclick=openUserModal;$('#closeUserModalBtn').onclick=closeUserModal;$('#cancelUserModalBtn').onclick=closeUserModal;$('#userForm').onsubmit=createUser;$('#userModalBackdrop').onclick=e=>{if(e.target.id==='userModalBackdrop')closeUserModal()};$('#changePasswordForm').onsubmit=changeOwnPassword;$('#resetPasswordForm').onsubmit=resetUserPassword;$('#closeResetPasswordModalBtn').onclick=closeResetPasswordModal;$('#cancelResetPasswordBtn').onclick=closeResetPasswordModal;$('#resetPasswordModalBackdrop').onclick=e=>{if(e.target.id==='resetPasswordModalBackdrop')closeResetPasswordModal()};
     $('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b)go(b.dataset.page)});
-    document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)go(g.dataset.go);const ed=e.target.closest('[data-edit]');if(ed)openModal(ed.dataset.edit);const del=e.target.closest('[data-delete]');if(del)deleteEquipment(del.dataset.delete);const control=e.target.closest('[data-update-control]');if(control)toggleUpdateControl(control.dataset.updateControl);const choice=e.target.closest('[data-status-choice]');if(choice){const group=choice.closest('[data-field="status"]');if(group){let selected=choice.dataset.statusChoice;if(selected==='maintenance'){const current=group.dataset.value;selected=['Preventiva','Corretiva'].includes(current)?current:'Preventiva';}group.dataset.value=selected;group.querySelectorAll('.status-dot').forEach(btn=>btn.classList.toggle('active',btn===choice));const row=group.closest('tr');if(row)row.style.setProperty('--status-color',statusColor[selected]||'#1d8cff');}}const qs=e.target.closest('[data-quick-save]');if(qs)quickSaveEquipment(qs.dataset.quickSave);const rp=e.target.closest('[data-reset-password]');if(rp)openResetPasswordModal(rp.dataset.resetPassword);const du=e.target.closest('[data-delete-user]');if(du)deleteUser(du.dataset.deleteUser)});
+    document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)go(g.dataset.go);const ed=e.target.closest('[data-edit]');if(ed)openModal(ed.dataset.edit);const del=e.target.closest('[data-delete]');if(del)deleteEquipment(del.dataset.delete);const control=e.target.closest('[data-update-control]');if(control)toggleUpdateControl(control.dataset.updateControl);const choice=e.target.closest('[data-status-choice]');if(choice){const group=choice.closest('[data-field="status"]');if(group){let selected=choice.dataset.statusChoice;if(selected==='maintenance'){const current=group.dataset.value;selected=['Preventiva','Corretiva'].includes(current)?current:'Preventiva';}group.dataset.value=selected;group.querySelectorAll('.status-dot').forEach(btn=>btn.classList.toggle('active',btn===choice));const row=group.closest('tr');if(row)row.style.setProperty('--status-color',statusColor[selected]||'#1d8cff');}}const qs=e.target.closest('[data-quick-save]');if(qs)quickSaveEquipment(qs.dataset.quickSave);const rp=e.target.closest('[data-reset-password]');if(rp)openResetPasswordModal(rp.dataset.resetPassword);const du=e.target.closest('[data-delete-user]');if(du)deleteUser(du.dataset.deleteUser);const cm=e.target.closest('[data-copy-maintenance]');if(cm){const r=maintenanceHistory.find(x=>x.id===cm.dataset.copyMaintenance);if(r)navigator.clipboard.writeText(maintenanceMessage(r)).then(()=>toast('Mensagem da manutenção copiada'))}const sm=e.target.closest('[data-share-maintenance]');if(sm){const r=maintenanceHistory.find(x=>x.id===sm.dataset.shareMaintenance);if(r){const text=maintenanceMessage(r);if(navigator.share)navigator.share({title:'Equipamentos em manutenção',text});else navigator.clipboard.writeText(text).then(()=>toast('Mensagem copiada para compartilhar'))}}});
     $('#equipmentGrid').addEventListener('input',()=>{});
     $('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
     $('#themeBtn').onclick=()=>{state.settings.theme=state.settings.theme==='light'?'dark':'light';save();applyTheme()};
     $('#newEquipmentBtn').onclick=()=>openModal();$('#closeModalBtn').onclick=closeModal;$('#cancelModalBtn').onclick=closeModal;
     $('#modalBackdrop').onclick=e=>{if(e.target.id==='modalBackdrop')closeModal()};
-    $('#equipmentForm').onsubmit=submitEquipment;$('#eqCategory').onchange=updateCategoryFields;
+    $('#equipmentForm').onsubmit=submitEquipment;$('#eqCategory').onchange=updateCategoryFields;$('#eqStatus').addEventListener('change',updateMaintenanceDetailsVisibility);
+    $('#eqSubstitute').addEventListener('input',updateMaintenanceDetailsVisibility);
+    $('#eqSubstitute').addEventListener('change',updateMaintenanceDetailsVisibility);
     $('#eqPrefix').addEventListener('change',()=>{syncCapacityFromPrefix();syncClientFromPrefix(true)});
     $('#eqPrefix').addEventListener('input',()=>syncClientFromPrefix(false));
     $('#eqPrefix').addEventListener('input',()=>{if($('#eqPrefix').value.includes('('))syncCapacityFromPrefix()});
@@ -796,7 +891,7 @@
     $('#generateReportBtn').onclick=generateReport;$('#saveReportBtn').onclick=saveReport;
     $('#copyReportBtn').onclick=async()=>{generateReport();await navigator.clipboard.writeText($('#reportOutput').value);toast('Relatório copiado')};
     $('#shareReportBtn').onclick=async()=>{generateReport();const text=$('#reportOutput').value;if(navigator.share)await navigator.share({title:'XCMG Report',text});else{await navigator.clipboard.writeText(text);toast('Copiado para compartilhar')}};
-    $('#historySearch').oninput=renderHistory;$('#clearHistoryBtn').onclick=()=>{if(confirm('Limpar todo o histórico?')){state.history=[];save();renderHistory();renderDashboard()}};
+    $('#historySearch').oninput=renderHistory;$('#maintenanceHistorySearch').oninput=renderMaintenanceHistory;$('#clearHistoryBtn').onclick=()=>{if(confirm('Limpar todo o histórico?')){state.history=[];save();renderHistory();renderDashboard()}};
     $('#saveSettingsBtn').onclick=()=>{state.settings.company=$('#cfgCompany').value.trim()||'XCMG';state.settings.title=$('#cfgTitle').value.trim()||'STATUS XCMG MINA';state.settings.fuelLimit=Math.max(0,Math.min(100,Number($('#cfgFuelLimit').value)||30));save();renderDashboard();toast('Configurações salvas')};
     $('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`xcmg-report-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)};
     $('#importInput').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!data.equipments)throw Error();state=data;state.equipments=state.equipments.map(migrateEquipment);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Backup importado')}catch{alert('Arquivo de backup inválido.')}};
@@ -820,6 +915,7 @@
     // Envia pendências locais antes de puxar o remoto, para não perder alterações offline.
     await flushOfflineQueue();
     await hydrateRemoteCache();
+    loadMaintenanceHistory();
     await loadAuth();
     if(currentUser)startSession();
     else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}
