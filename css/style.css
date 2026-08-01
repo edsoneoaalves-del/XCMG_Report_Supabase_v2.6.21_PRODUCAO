@@ -1090,6 +1090,69 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
 .maintenance-details-grid label{color:var(--muted);font-size:12px}
 @media(max-width:520px){.maintenance-details{padding:12px}.maintenance-details-head{align-items:flex-start;flex-direction:column;gap:3px}.maintenance-details-head small{text-align:left}.maintenance-details-grid{grid-template-columns:1fr}}
 
-/* v2.9.3 — Apoio à Manutenção restrito ao histórico */
+/* v2.9.4 — Local exibido no Histórico da Manutenção */
 .maintenance-details-grid label.hidden{display:none!important}
 .maintenance-history-row span b{color:var(--text)}
+
+
+/* v2.9.8 — mostrar/ocultar senha no login */
+.password-field{position:relative;display:block}
+.password-field input{width:100%;padding-right:46px}
+.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:9px;background:transparent;display:grid;place-items:center;cursor:pointer;font-size:18px;line-height:1;color:inherit;opacity:.72}
+.password-toggle:hover,.password-toggle:focus-visible{background:rgba(29,140,255,.10);opacity:1;outline:none}
+.password-toggle:active{transform:translateY(-50%) scale(.96)}
+
+
+/* Central de Recados — v2.11.0 */
+.nav-count{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:#e53935;color:#fff;font-size:11px;font-weight:800}.messages-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.message-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.message-tab{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:12px;padding:9px 14px;cursor:pointer;font-weight:700}.message-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}.message-tab span{display:inline-flex;min-width:20px;justify-content:center;margin-left:5px}.message-toolbar{margin-bottom:16px}.message-list{display:grid;gap:12px}.message-card{position:relative;border:1px solid var(--border);border-left:5px solid #f4b400;background:var(--card);border-radius:16px;padding:16px}.message-card.priority-high{border-left-color:#e53935}.message-card.priority-low{border-left-color:#2e9d58}.message-card.unread{box-shadow:0 0 0 2px rgba(29,140,255,.16)}.message-card-head,.message-route,.message-actions{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.message-card-head h3{margin:5px 0 0}.message-priority,.message-meta,.message-route,.message-sync{font-size:12px}.message-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;color:var(--muted)}.message-meta strong{color:var(--primary)}.message-route{margin:12px 0;color:var(--muted);flex-wrap:wrap}.message-equipment{display:inline-flex;padding:5px 9px;border-radius:9px;background:rgba(29,140,255,.1);font-size:13px;font-weight:700;margin-bottom:8px}.message-body{white-space:normal;line-height:1.55;margin:8px 0 14px}.message-actions{justify-content:flex-start;align-items:center;flex-wrap:wrap}.message-sync{color:var(--muted);margin-left:auto}.message-note{margin:10px 0 0}.message-modal textarea{resize:vertical}@media(max-width:700px){.messages-head{align-items:flex-start;flex-direction:column}.messages-head .btn{width:100%}.message-card-head,.message-route{flex-direction:column}.message-meta{align-items:flex-start}.message-toolbar{align-items:stretch}.message-toolbar .search,.message-toolbar select{width:100%}.message-sync{width:100%;margin-left:0}}
+
+
+/* v2.11.1 — congelamento da interface superior na tela Equipamentos */
+@media (min-width: 801px){
+  body.equipment-page-active{overflow:hidden}
+  body.equipment-page-active .main{
+    height:100vh;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    padding-bottom:18px;
+  }
+  body.equipment-page-active .topbar{
+    flex:0 0 auto;
+    margin-bottom:16px;
+  }
+  body.equipment-page-active #page-equipamentos.active{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  body.equipment-page-active #page-equipamentos .toolbar{
+    flex:0 0 auto;
+    margin-bottom:14px;
+  }
+  body.equipment-page-active #equipmentGrid{
+    flex:1 1 auto;
+    min-height:0;
+    overflow:hidden;
+  }
+  body.equipment-page-active .equipment-table-wrap{
+    height:100%;
+    max-height:100%;
+    overflow:auto;
+    overscroll-behavior:contain;
+  }
+  body.equipment-page-active .equipment-table th{
+    position:sticky;
+    top:0;
+    z-index:4;
+    box-shadow:0 1px 0 var(--line);
+  }
+  body.equipment-page-active #equipmentEmpty{
+    flex:1 1 auto;
+    min-height:0;
+    overflow:auto;
+  }
+}

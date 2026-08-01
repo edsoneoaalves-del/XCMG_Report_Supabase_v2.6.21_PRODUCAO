@@ -177,3 +177,21 @@ ATUALIZAÇÃO v2.8.9 — MOBILE DENSITY
 - Tela Equipamentos reduzida em aproximadamente 15%, sem alterar sua organização.
 - Ocultado no celular o botão secundário do cabeçalho que causava duplicidade visual com "Sair".
 - Supabase, autenticação, banco, relatórios e sincronização mantidos.
+
+
+Versão 2.9.6:
+- Corrigida a transmissão do campo maintenanceLocation para o Histórico da Manutenção nos status Preventiva e Corretiva.
+- Mantido o envio do local para equipamentos Substituídos.
+
+
+Versão 2.9.7:
+- Adicionada exclusão individual de registros no Histórico da Manutenção.
+- Botão Excluir registro visível somente para administrador.
+- Confirmação obrigatória antes da exclusão.
+- Exclusão sincronizada no armazenamento local e remoto.
+
+
+Versão 2.9.8:
+- Adicionado botão para mostrar e ocultar a senha na tela de login.
+- A senha continua oculta por padrão ao abrir o sistema.
+- O formulário de login mantém o envio pela tecla Enter.

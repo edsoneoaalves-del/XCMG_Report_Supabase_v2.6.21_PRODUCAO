@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=2.9.3">
+  <link rel="stylesheet" href="css/style.css?v=2.11.3">
 </head>
 <body>
   <section class="pwa-install-banner hidden" id="pwaInstallBanner" aria-live="polite">
@@ -41,7 +41,12 @@
       <p class="muted">Acesse suas informações da turma.</p>
       <form id="loginForm">
         <label>Usuário<input id="loginUsername" autocomplete="username" required></label>
-        <label>Senha<input type="password" id="loginPassword" autocomplete="current-password" required></label>
+        <label>Senha
+          <span class="password-field">
+            <input type="password" id="loginPassword" autocomplete="current-password" required>
+            <button type="button" class="password-toggle" id="toggleLoginPassword" aria-label="Mostrar senha" aria-pressed="false" title="Mostrar senha">👁</button>
+          </span>
+        </label>
         <button class="btn primary login-btn" type="submit">Entrar</button>
       </form>
       <small class="login-help">Use o acesso fornecido pelo administrador.</small>
@@ -57,6 +62,7 @@
         <button class="nav-item" data-page="relatorios">▧ <span>Relatórios</span></button>
         <button class="nav-item" data-page="historico">◷ <span>Histórico</span></button>
         <button class="nav-item" data-page="manutencao">🔧 <span>Histórico Manutenção</span></button>
+        <button class="nav-item" data-page="recados">📬 <span>Central de Recados</span><span class="nav-count hidden" id="messageNavCount">0</span></button>
         <button class="nav-item admin-only" data-page="usuarios">♙ <span>Usuários</span></button>
         <button class="nav-item" data-page="configuracoes">⚙ <span>Configurações</span></button>
       </nav>
@@ -132,6 +138,25 @@
         <div class="maintenance-history-list" id="maintenanceHistoryList"></div>
       </section>
 
+
+      <section class="page" id="page-recados">
+        <div class="messages-head">
+          <div><h2>📬 Central de Recados</h2><p class="muted">Comunicação interna entre líderes, organizada por destinatário e prioridade.</p></div>
+          <button class="btn primary" id="newMessageBtn">+ Novo recado</button>
+        </div>
+        <div class="message-tabs" role="tablist" aria-label="Pastas de recados">
+          <button class="message-tab active" type="button" data-message-tab="inbox">Caixa de entrada <span id="messageInboxCount">0</span></button>
+          <button class="message-tab" type="button" data-message-tab="sent">Enviados</button>
+          <button class="message-tab admin-message-tab hidden" type="button" data-message-tab="all">Todos</button>
+        </div>
+        <div class="toolbar message-toolbar">
+          <div class="search"><span>⌕</span><input id="messageSearch" placeholder="Pesquisar assunto, mensagem, usuário ou equipamento..."></div>
+          <select id="messagePriorityFilter"><option value="">Todas as prioridades</option><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select>
+        </div>
+        <div class="message-list" id="messageList"></div>
+        <div class="empty hidden" id="messageEmpty">Nenhum recado encontrado.</div>
+      </section>
+
       <section class="page" id="page-usuarios">
         <div class="toolbar">
           <div><h2>Usuários</h2><p class="muted">Cada usuário possui seu próprio acesso. As informações operacionais são salvas automaticamente para garantir a continuidade entre os turnos.</p></div>
@@ -198,18 +223,43 @@
     </div>
   </div>
 
+
+  <div class="modal-backdrop hidden" id="messageModalBackdrop">
+    <div class="modal message-modal">
+      <div class="modal-head"><h2>Novo recado</h2><button class="icon-btn" id="closeMessageModalBtn" type="button">×</button></div>
+      <form id="messageForm">
+        <div class="form-grid">
+          <label>Destinatário*<select id="messageRecipient" required></select></label>
+          <label>Prioridade*<select id="messagePriority" required><option value="high">🔴 Alta</option><option value="medium" selected>🟡 Média</option><option value="low">🟢 Baixa</option></select></label>
+          <label class="full">Assunto*<input id="messageSubject" maxlength="120" required placeholder="Ex.: Guindaste 1JA241"></label>
+          <label>Equipamento (opcional)<input id="messageEquipment" list="prefixOptions" placeholder="Ex.: 1JA241"></label>
+          <label class="full">Mensagem*<textarea id="messageBody" rows="6" maxlength="2000" required placeholder="Digite a informação importante para o próximo líder..."></textarea></label>
+        </div>
+        <p class="muted message-note">O destinatário verá o recado em sua caixa de entrada. A data, hora e remetente são registrados automaticamente.</p>
+        <div class="actions end"><button type="button" class="btn" id="cancelMessageBtn">Cancelar</button><button type="submit" class="btn primary">Enviar recado</button></div>
+      </form>
+    </div>
+  </div>
+
   <div class="modal-backdrop hidden" id="userModalBackdrop">
     <div class="modal user-modal">
-      <div class="modal-head"><h2>Criar usuário</h2><button class="icon-btn" id="closeUserModalBtn">×</button></div>
+      <div class="modal-head"><h2 id="userModalTitle">Criar usuário</h2><button class="icon-btn" id="closeUserModalBtn">×</button></div>
       <form id="userForm">
+        <input type="hidden" id="editUserId">
         <div class="form-grid">
           <label>Nome completo*<input id="userFullName" required placeholder="Ex.: Edson Alves"></label>
           <label>Turma*<input id="userTeam" required placeholder="Ex.: Turma D"></label>
           <label>Usuário*<input id="newUsername" required autocomplete="off" placeholder="Ex.: edson.alves"></label>
-          <label>Senha*<input type="password" id="newUserPassword" required minlength="4" autocomplete="new-password"></label>
+          <label id="newUserPasswordLabel">Senha*<input type="password" id="newUserPassword" required minlength="4" autocomplete="new-password"></label>
+          <label>Nível de acesso*
+            <select id="newUserAccessLevel" required>
+              <option value="full" selected>Acesso total</option>
+              <option value="consultation">Consulta — Visualizar, copiar e compartilhar</option>
+            </select>
+          </label>
         </div>
         <p class="muted user-note">Somente o administrador pode criar usuários. Os dados operacionais são atualizados automaticamente entre os turnos.</p>
-        <div class="actions end"><button type="button" class="btn" id="cancelUserModalBtn">Cancelar</button><button type="submit" class="btn primary">Criar usuário</button></div>
+        <div class="actions end"><button type="button" class="btn" id="cancelUserModalBtn">Cancelar</button><button type="submit" class="btn primary" id="saveUserBtn">Criar usuário</button></div>
       </form>
     </div>
   </div>
@@ -231,8 +281,8 @@
 
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/offline-sync.js?v=2.9.3"></script>
-  <script src="js/app.js?v=2.9.3"></script>
-  <script src="js/pwa.js?v=2.9.3" defer></script>
+  <script src="js/offline-sync.js?v=2.11.3"></script>
+  <script src="js/app.js?v=2.11.3"></script>
+  <script src="js/pwa.js?v=2.11.3" defer></script>
 </body>
 </html>

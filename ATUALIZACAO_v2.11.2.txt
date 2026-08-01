@@ -1,0 +1,14 @@
+XCMG REPORT v2.11.2 — EDIÇÃO DE USUÁRIOS
+
+Nova função disponível somente para o Administrador:
+- Editar nome completo;
+- Editar turma;
+- Editar nome de usuário;
+- Alterar o nível de acesso entre:
+  * Acesso total
+  * Consulta — Visualizar, copiar e compartilhar
+- Definir uma nova senha durante a edição, de forma opcional.
+
+Proteção:
+- O perfil Administrador não pode ser convertido em Consulta pelo formulário.
+- Usuários existentes foram preservados.

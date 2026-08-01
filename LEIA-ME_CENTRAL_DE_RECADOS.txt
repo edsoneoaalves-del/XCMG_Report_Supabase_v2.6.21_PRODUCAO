@@ -1,0 +1,15 @@
+XCMG REPORT v2.11.0 — CENTRAL DE RECADOS
+
+1. Antes de utilizar a Central de Recados online, abra o Supabase.
+2. Entre no SQL Editor.
+3. Copie todo o conteúdo do arquivo CRIAR_CENTRAL_DE_RECADOS_SUPABASE.sql.
+4. Execute o SQL uma única vez.
+5. Publique esta pasta no GitHub/Vercel.
+6. Atualize/reabra o aplicativo instalado para carregar o cache v2.11.0.
+
+PERMISSÕES NO APLICATIVO
+- Administrador: envia, recebe, visualiza todos e exclui qualquer recado.
+- Acesso total: envia, recebe, copia, compartilha e exclui os próprios recados enviados.
+- Consulta: recebe, visualiza, copia e compartilha; não envia nem exclui.
+
+O sistema mantém uma cópia local e sinaliza recados aguardando sincronização quando estiver offline.

@@ -1,0 +1,9 @@
+XCMG REPORT v2.11.3 — CENTRAL DE RECADOS PARA TODOS
+
+Alteração realizada:
+- A Central de Recados foi liberada para todos os usuários, inclusive o perfil Consulta.
+- Todos podem criar, enviar, receber, visualizar, marcar como lido, copiar e compartilhar recados.
+- O administrador continua podendo excluir qualquer recado.
+- Os demais usuários podem excluir somente os próprios recados enviados.
+- As restrições do perfil Consulta permanecem nas funções operacionais do sistema.
+- Cache do PWA atualizado para v2.11.3.
