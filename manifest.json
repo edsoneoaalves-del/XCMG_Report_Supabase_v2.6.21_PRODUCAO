@@ -7,12 +7,20 @@
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "orientation": "portrait-primary",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
   "background_color": "#07111f",
   "theme_color": "#07162a",
-  "categories": ["business", "productivity", "utilities"],
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -38,13 +46,23 @@
       "name": "Equipamentos",
       "short_name": "Equipamentos",
       "url": "./?page=equipamentos",
-      "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Relatórios",
       "short_name": "Relatórios",
       "url": "./?page=relatorios",
-      "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

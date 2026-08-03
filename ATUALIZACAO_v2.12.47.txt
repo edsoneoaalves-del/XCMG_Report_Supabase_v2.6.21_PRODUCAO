@@ -1,0 +1,13 @@
+XCMG REPORT — ATUALIZAÇÃO v2.12.47
+
+ALTERAÇÃO REALIZADA
+- PWA configurado para iniciar em modo de tela cheia (fullscreen).
+- Removido window-controls-overlay da prioridade de exibição.
+- Mantido fallback para standalone e minimal-ui quando o navegador não aceitar fullscreen.
+- Orientação liberada para qualquer posição, preservando o uso em computador e celular.
+- Cache do Service Worker atualizado para v13, forçando a aplicação da nova configuração.
+
+IMPORTANTE
+- Após publicar esta versão, feche e abra novamente o aplicativo instalado.
+- Caso o Edge mantenha a configuração antiga, desinstale e instale novamente o PWA.
+- A barra superior pertence ao Microsoft Edge. O modo fullscreen solicita a exibição sem essa barra, mas o comportamento final depende do suporte e das políticas do navegador/Windows.

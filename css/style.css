@@ -2543,7 +2543,7 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
   }
 }
 
-/* v2.12.46 — Status do Efetivo totalmente responsivo para celular */
+/* v2.12.47 — Status do Efetivo totalmente responsivo para celular */
 @media (max-width:800px){
   body.status-initial-page-active{overflow:auto!important}
   body.status-initial-page-active .main{padding:10px!important;overflow:visible!important;height:auto!important}
