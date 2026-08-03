@@ -1,0 +1,8 @@
+XCMG Report v2.12.46 — Ajuste completo do Status do Efetivo para celular
+
+- Cabeçalho superior reorganizado em grade responsiva.
+- Pesquisa e filtros adaptados à largura do celular.
+- Tabela convertida em cartões verticais no mobile.
+- Campos, botões de controle e ações alinhados sem estouro lateral.
+- Rodapé de ações e pré-visualização ajustados para telas pequenas.
+- Desktop mantido sem alteração funcional.
