@@ -1,0 +1,6 @@
+XCMG Report v2.12.21
+
+- Corrigido o botão Detalhes do Status do Efetivo.
+- O modal agora busca o registro pelo ID do equipamento.
+- Equipamento, Substitui e Categoria são carregados automaticamente e permanecem editáveis.
+- Cache PWA atualizado para 2.12.21.

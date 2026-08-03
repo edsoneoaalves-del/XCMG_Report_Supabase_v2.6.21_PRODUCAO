@@ -1,0 +1,8 @@
+XCMG REPORT v2.12.15
+
+ALTERAÇÃO REALIZADA
+- Removido o botão “+ Novo status” do cabeçalho do Status do Efetivo.
+- Removido o botão “Salvar rascunho” do cabeçalho do Status do Efetivo.
+- Mantidos os salvamentos individuais por equipamento e as ações de gerar, copiar e compartilhar a mensagem.
+- Cabeçalho ficou mais limpo e com maior área útil para os filtros e a tabela.
+- Cache PWA atualizado para v2.12.15.

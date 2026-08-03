@@ -1,0 +1,11 @@
+XCMG REPORT — ATUALIZAÇÃO v2.12.4
+
+Módulo: Status do Efetivo
+
+- Incluído botão Salvar em cada equipamento.
+- Incluído controle interno de conferência Pendente/Conferido.
+- Ao editar qualquer campo, o item volta automaticamente para Pendente.
+- Ao clicar em Salvar, o item é persistido e marcado como Conferido.
+- Campos Equipamento, Status do Operador e Status do Sinaleiro ficaram mais compactos.
+- Layout reorganizado para melhor aproveitamento em desktop e celular.
+- Restante do projeto preservado.

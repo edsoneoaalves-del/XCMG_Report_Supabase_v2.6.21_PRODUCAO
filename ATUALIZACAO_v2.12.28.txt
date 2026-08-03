@@ -1,0 +1,9 @@
+XCMG REPORT v2.12.28
+
+Correção exclusiva da tabela Status do Efetivo:
+- coluna Observação preservada;
+- coluna Controle com largura fixa;
+- coluna Ações ampliada;
+- botões Salvar, Detalhes e Excluir totalmente visíveis;
+- rolagem horizontal mantida em telas menores;
+- nenhum campo ou regra operacional alterado.

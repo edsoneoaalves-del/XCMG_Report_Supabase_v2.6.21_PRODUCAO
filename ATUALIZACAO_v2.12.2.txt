@@ -1,0 +1,11 @@
+XCMG REPORT v2.12.2 — STATUS DO EFETIVO
+
+- Renomeado “Status Inicial do Turno” para “Status do Efetivo”.
+- Capacidade vinculada automaticamente ao prefixo do equipamento.
+- Campo de capacidade protegido contra edição manual.
+- Adicionado status do operador: com operador, sem operador ou não se aplica.
+- Adicionado status do sinaleiro: com sinaleiro, sem sinaleiro ou não se aplica.
+- Status posicionados antes dos respectivos nomes.
+- Mensagem gerada atualizada com os indicadores independentes.
+- Dados já salvos são migrados automaticamente.
+- Demais módulos do projeto foram preservados.

@@ -1,0 +1,8 @@
+XCMG REPORT v2.12.33
+
+Correção aplicada exclusivamente na coluna STATUS do módulo Status do Efetivo:
+- Indicador colorido voltou a aparecer dentro do seletor.
+- Seta do seletor preservada.
+- Largura da coluna ajustada sem alterar os demais campos e botões.
+- Layout em zoom de 85% preservado.
+- Cache PWA atualizado.

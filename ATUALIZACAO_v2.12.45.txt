@@ -1,0 +1,7 @@
+XCMG Report v2.12.45
+
+CORREÇÃO — CABEÇALHO CONTROLE E AÇÕES
+
+- Corrigido o congelamento vertical das colunas Controle e Ações no cabeçalho da tabela.
+- As duas colunas agora permanecem visíveis junto com todo o cabeçalho durante a rolagem.
+- Mantidos o layout compacto, os campos, os botões e todas as funcionalidades existentes.

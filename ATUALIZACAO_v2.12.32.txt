@@ -1,0 +1,8 @@
+ATUALIZAÇÃO v2.12.32
+
+- Corrigida a sobreposição das colunas Controle e Ações.
+- Restaurada a ordem completa da tabela: Status, Equipamento, Substitui, Status Operador, Operador, Status Sinaleiro, Sinaleiro, Local/Área, Observação, Controle e Ações.
+- Botão Observação mantido visível.
+- Botão Salvar reduzido sem alterar a largura estrutural das demais colunas.
+- Salvar, Detalhes e Excluir permanecem alinhados na mesma linha.
+- Atualizado o cache da PWA para carregar o novo layout.

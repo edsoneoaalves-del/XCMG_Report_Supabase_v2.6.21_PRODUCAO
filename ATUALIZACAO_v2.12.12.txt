@@ -1,0 +1,11 @@
+XCMG REPORT v2.12.12
+
+CORREÇÕES
+- Removido o texto “Exibindo X de Y equipamentos”.
+- Pesquisa corrigida para filtrar durante a digitação.
+- Filtro por categoria corrigido.
+- Filtro por status corrigido.
+- Os três filtros funcionam simultaneamente.
+- Botão Limpar filtros reposicionado na barra principal.
+- Eventos dos filtros são vinculados novamente após cada renderização.
+- Cache PWA atualizado.

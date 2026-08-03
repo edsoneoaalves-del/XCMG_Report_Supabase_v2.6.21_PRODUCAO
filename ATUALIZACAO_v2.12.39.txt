@@ -1,0 +1,8 @@
+XCMG Report v2.12.39
+
+CORREÇÃO — BOTÃO CONTROLE / CONFERIDO
+
+- Corrigido o deslocamento/rolagem da página ao clicar em “Conferido” ou “Pendente”.
+- O botão agora é atualizado diretamente, sem reconstruir toda a tabela de equipamentos.
+- Mantida exatamente a posição atual da tela.
+- Mantidos layout, dados, Dashboard, relatórios e demais funcionalidades.

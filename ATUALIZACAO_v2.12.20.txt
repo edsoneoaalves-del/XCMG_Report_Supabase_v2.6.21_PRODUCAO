@@ -1,0 +1,8 @@
+XCMG Report v2.12.20
+
+- Corrigido o botão Detalhes no Status do Efetivo.
+- O modal agora carrega automaticamente o equipamento da linha selecionada.
+- O campo Substitui e a categoria também são carregados automaticamente.
+- Todos os campos permanecem editáveis.
+- A edição atualiza o mesmo registro, sem criar duplicidade.
+- Cache PWA atualizado para a versão 2.12.20.

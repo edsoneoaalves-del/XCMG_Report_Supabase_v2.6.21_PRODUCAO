@@ -1,0 +1,8 @@
+XCMG Report v2.12.11
+
+- Corrigidos os comandos dos filtros no Status do Efetivo.
+- Pesquisa aplica o filtro imediatamente durante a digitação.
+- Filtro de categorias funciona em conjunto com pesquisa e status.
+- Filtro de status funciona para operacional, sem operador, manutenção, conferido e pendente.
+- Adicionados listeners resistentes a re-renderização e navegação entre telas.
+- Atualizado o cache PWA para impedir carregamento do JavaScript anterior.

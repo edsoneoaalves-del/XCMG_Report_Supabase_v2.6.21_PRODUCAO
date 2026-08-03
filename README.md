@@ -47,3 +47,7 @@ A URL e a chave pública do Supabase estão em `js/app.js`. A chave `publishable
 - Ao abrir `index.html` diretamente pelo Explorador (`file://`), o navegador não permite Service Worker nem heartbeat HTTP. Nesse modo, o indicador acompanha `navigator.onLine` e os eventos online/offline.
 - Em Vercel, localhost ou outro servidor HTTP/HTTPS, o indicador usa o arquivo `connectivity-check.txt` sem cache para validar a conexão real.
 - Para validar a PWA e a sincronização completa, teste pela URL da Vercel ou por um servidor local, nunca apenas clicando duas vezes no `index.html`.
+
+
+## v2.12.45
+Cabeçalho da tabela do Status do Efetivo congelado, com rolagem apenas das linhas e altura automática conforme a tela.

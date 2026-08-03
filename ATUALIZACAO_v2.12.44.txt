@@ -1,0 +1,8 @@
+XCMG Report v2.12.44 — Cabeçalho da tabela congelado
+
+- Mantido o painel superior compacto e congelado.
+- Congelado também o cabeçalho da tabela: Status, Equipamento, Substitui, Status Operador, Operador, Status Sinaleiro, Sinaleiro, Local / Área, Observação, Controle e Ações.
+- Somente as linhas dos equipamentos rolam dentro da área útil.
+- Altura da tabela ajustada automaticamente conforme a tela.
+- Rolagem horizontal, colunas fixas Controle/Ações e layout móvel preservados.
+- Cache PWA atualizado para v2.12.44.

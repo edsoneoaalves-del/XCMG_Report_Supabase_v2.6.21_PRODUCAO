@@ -1,0 +1,7 @@
+ATUALIZAÇÃO v2.12.31
+
+- Mantido o layout aprovado da tela Status do Efetivo.
+- Botão Salvar reduzido de forma segura e proporcional.
+- Botões Detalhes e Excluir mantidos alinhados na mesma linha.
+- Coluna e botão Observação preservados e forçados como visíveis.
+- Ajuste direcionado ao uso em zoom de 85%, sem mudança de funções.

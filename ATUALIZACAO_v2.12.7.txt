@@ -1,0 +1,10 @@
+XCMG REPORT v2.12.7
+
+STATUS DO EFETIVO
+- Incluída pesquisa por prefixo, categoria, operador, sinaleiro, local ou observação.
+- Incluído filtro Todas as categorias.
+- Incluído filtro Todos os status, com opções operacionais e de conferência.
+- Incluído contador de equipamentos exibidos.
+- Incluído botão Novo equipamento na barra de filtros.
+- Campos, categorias, controle Pendente/Conferido, botões Salvar e geração da mensagem foram preservados.
+- Cache PWA atualizado para v2.12.7.

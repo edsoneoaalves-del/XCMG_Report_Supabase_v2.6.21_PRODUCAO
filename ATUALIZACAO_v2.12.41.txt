@@ -1,0 +1,11 @@
+XCMG Report v2.12.41
+
+CONTROLE DE CONFERÊNCIA MANUAL
+
+- O botão Controle voltou a aceitar alteração manual.
+- Clique em ✓ Conferido para mudar para ⚠ Pendente.
+- Clique em ⚠ Pendente para mudar para ✓ Conferido.
+- Qualquer alteração nos campos da linha continua marcando automaticamente como Pendente.
+- Ao clicar em Salvar, o controle muda automaticamente para Conferido.
+- Os cliques em Salvar e Controle não recarregam a tabela e não movimentam a página.
+- Contador de pendências mantido.

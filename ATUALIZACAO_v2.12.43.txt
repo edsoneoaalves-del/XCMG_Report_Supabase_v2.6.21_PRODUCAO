@@ -1,0 +1,10 @@
+XCMG Report v2.12.43 — Faixa superior ultracompacta
+
+Alterações realizadas:
+- Redução da altura do cabeçalho principal no Status do Efetivo.
+- Redução dos espaçamentos superiores e inferiores.
+- Campos de título, data, turno e dia da semana mais compactos.
+- Pesquisa, filtros e botão Novo equipamento mais baixos e alinhados.
+- Cabeçalho congelado preservado.
+- Maior área útil para visualização das linhas dos equipamentos.
+- Layout mobile preservado.

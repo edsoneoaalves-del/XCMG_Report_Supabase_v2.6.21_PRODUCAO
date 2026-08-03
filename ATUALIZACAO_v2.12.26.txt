@@ -1,0 +1,7 @@
+XCMG Report v2.12.26
+
+Correção exclusiva de interface no Status do Efetivo:
+- coluna Controle reposicionada sem sobreposição;
+- coluna Ações ampliada;
+- botões Salvar, Detalhes e Excluir totalmente visíveis;
+- nenhuma regra de negócio alterada.

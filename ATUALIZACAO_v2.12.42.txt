@@ -1,0 +1,10 @@
+XCMG Report v2.12.42
+
+ATUALIZAÇÃO — CABEÇALHO CONGELADO NO STATUS DO EFETIVO
+
+- O cabeçalho superior do Status do Efetivo permanece visível durante a rolagem.
+- Foram congelados os campos de título, data, turno e dia da semana.
+- A pesquisa, os filtros e o botão “Novo equipamento” também permanecem fixos.
+- Somente o conteúdo operacional abaixo do cabeçalho é movimentado pela rolagem.
+- Mantido o comportamento responsivo no celular, sem bloquear a navegação.
+- Cache PWA atualizado para a versão 2.12.42.

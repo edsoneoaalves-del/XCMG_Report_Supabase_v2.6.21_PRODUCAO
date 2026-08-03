@@ -1,0 +1,7 @@
+XCMG REPORT v2.12.24
+
+Correção exclusiva do botão Controle interno de conferência:
+- botão Pendente/Conferido compactado;
+- texto centralizado e sem corte;
+- tooltip nativo removido para não encobrir os botões de ação;
+- comportamento e lógica preservados.

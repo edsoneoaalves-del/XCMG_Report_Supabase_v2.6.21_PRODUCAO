@@ -1,0 +1,10 @@
+XCMG REPORT v2.12.15
+
+- Corrigida a geração da mensagem do Status do Efetivo.
+- Observações agora são exibidas sem o ícone de status (🟢/🟡/🔴).
+- Equipamento, operador e sinaleiro continuam com seus respectivos indicadores.
+- Exemplo corrigido:
+  🟢 1JA405 SUB. 1JA342 - POOL
+  🟢 COM OPERADOR – WELLINGTON
+  CARREGADO COM MATERIAIS
+- Cache PWA atualizado para v2.12.15.

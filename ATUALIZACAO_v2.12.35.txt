@@ -1,0 +1,6 @@
+XCMG REPORT v2.12.35
+
+- Equipamentos ordenados automaticamente do menor para o maior dentro de cada categoria.
+- A ordenação considera primeiro o número do prefixo (ex.: 218, 221, 226, 230, 241).
+- A ordem é reaplicada ao cadastrar, editar, salvar ou recarregar a tela.
+- Layout, filtros, botões e demais funcionalidades foram preservados.

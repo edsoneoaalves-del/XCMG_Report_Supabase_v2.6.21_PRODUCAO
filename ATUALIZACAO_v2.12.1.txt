@@ -1,0 +1,10 @@
+XCMG REPORT v2.12.1 — LAYOUT CORPORATIVO DO STATUS INICIAL
+
+- Reformulação visual exclusiva da tela Status Inicial do Turno.
+- Cabeçalho institucional para comunicação operacional.
+- Organização profissional dos dados gerais, categorias e equipamentos.
+- Tabela operacional mais limpa no computador.
+- Cartões responsivos no celular.
+- Botões de ação destacados e pré-visualização aprimorada.
+- Lógica, dados e funcionamento do módulo preservados.
+- Cache PWA atualizado para v2.12.1.

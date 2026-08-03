@@ -1,0 +1,9 @@
+XCMG Report v2.12.5
+
+Atualização realizada:
+- Status do Efetivo passou a utilizar a mesma interface operacional da tela Equipamentos.
+- Mantidos todos os campos do painel.
+- Mantidos os botões Salvar, Controle Pendente/Conferido e Exclusão.
+- Categorias e inclusão de equipamentos preservadas.
+- Layout compacto, corporativo e responsivo.
+- Cache da PWA atualizado.

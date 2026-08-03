@@ -1,0 +1,7 @@
+XCMG Report v2.12.10
+
+- Removida a coluna editável Categoria da tabela Status do Efetivo.
+- Categoria permanece apenas no filtro superior e na organização interna dos dados.
+- Corrigidos os filtros de pesquisa, categoria e status para funcionarem em conjunto.
+- Mantidos todos os campos, botões, controles e geração da mensagem.
+- Cache PWA atualizado.

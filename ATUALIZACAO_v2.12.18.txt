@@ -1,0 +1,8 @@
+XCMG Report v2.12.18
+
+- Restaurada a coluna Ações no Status do Efetivo.
+- Botões Salvar, Detalhes e Remover novamente visíveis.
+- Corrigida a distribuição das 11 colunas da tabela.
+- Coluna Ações permanece visível ao rolar horizontalmente no computador.
+- Layout responsivo preservado no celular.
+- Cache da PWA atualizado.

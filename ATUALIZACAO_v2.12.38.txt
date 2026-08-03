@@ -1,0 +1,9 @@
+XCMG Report v2.12.38
+
+CORREÇÃO — PAINEL DE EQUIPAMENTOS
+
+- Corrigida a rolagem involuntária da página ao clicar no botão Salvar.
+- O salvamento rápido não recria mais toda a tabela de equipamentos.
+- A posição atual da tela e os campos da linha permanecem estáveis após salvar.
+- Dashboard, opções de prefixos, histórico e armazenamento continuam sendo atualizados normalmente.
+- Layout, CSS e demais funcionalidades foram mantidos.

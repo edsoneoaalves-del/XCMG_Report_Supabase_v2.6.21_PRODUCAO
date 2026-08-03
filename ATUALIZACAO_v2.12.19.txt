@@ -1,0 +1,6 @@
+XCMG Report v2.12.19
+
+- O botão Detalhes agora carrega automaticamente o equipamento, o campo Substitui e a categoria atuais.
+- Os dados permanecem totalmente editáveis no modal.
+- Controle interno Pendente/Conferido reduzido e ajustado para não ficar cortado.
+- Cache PWA atualizado para a versão 2.12.19.

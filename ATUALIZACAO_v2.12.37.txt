@@ -1,0 +1,7 @@
+XCMG Report v2.12.37
+
+- Cabeçalho do Status do Efetivo compactado.
+- Bloco interno duplicado de título e descrição ocultado.
+- Dados do comunicado organizados em uma única faixa menor.
+- Campos e filtros reduzidos para ampliar a área útil da tabela.
+- Funcionalidades, dados, botões e identidade visual preservados.

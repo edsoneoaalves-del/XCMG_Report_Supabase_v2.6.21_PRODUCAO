@@ -1,0 +1,9 @@
+XCMG REPORT v2.12.36
+
+ALTERAÇÃO REALIZADA
+- Removido o botão que abria uma janela para editar a observação.
+- A observação agora pode ser digitada diretamente na própria coluna da tabela.
+- Ao alterar a observação, o controle da linha volta para Pendente.
+- Ao clicar em Salvar, a observação é gravada e a linha fica Conferida.
+- A geração da mensagem continua utilizando a observação sem ícone de status.
+- Demais campos, filtros, botões, ordenação e layout foram preservados.

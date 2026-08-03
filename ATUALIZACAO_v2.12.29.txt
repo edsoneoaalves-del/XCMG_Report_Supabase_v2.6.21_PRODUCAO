@@ -1,0 +1,6 @@
+XCMG REPORT v2.12.29
+
+- Mantido fielmente o layout aprovado do Status do Efetivo.
+- Botões Salvar, Detalhes e Excluir compactados para uso em zoom de 85%.
+- Colunas Observação, Controle e Ações ajustadas sem sobreposição.
+- Todos os campos e funcionalidades preservados.

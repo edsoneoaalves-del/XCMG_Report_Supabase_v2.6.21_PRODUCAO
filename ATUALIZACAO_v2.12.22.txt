@@ -1,0 +1,5 @@
+XCMG REPORT v2.12.22
+
+- Equipamento e Substitui agora usam a lista atual da frota cadastrada no Painel Operacional.
+- O equipamento atual permanece selecionado e os campos continuam editáveis.
+- Cache PWA atualizado.

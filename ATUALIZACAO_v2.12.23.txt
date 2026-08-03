@@ -1,0 +1,6 @@
+XCMG REPORT v2.12.23
+
+- Todos os equipamentos ficam em negrito na mensagem gerada para WhatsApp.
+- Quando houver substituição, o padrão será: *1JA350 (SUB. 1JA273)*.
+- Quando não houver substituição, o padrão será: *1JA230 70t*.
+- Demais campos e funcionalidades foram preservados.

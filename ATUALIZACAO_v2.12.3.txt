@@ -1,0 +1,7 @@
+XCMG REPORT v2.12.3 — EQUIPAMENTO E CAPACIDADE UNIFICADOS
+
+- Removida a coluna separada CAP. do Status do Efetivo.
+- Equipamento e capacidade agora aparecem juntos no mesmo campo, por exemplo: 1JA230 70t.
+- A capacidade continua vinculada automaticamente ao prefixo do equipamento.
+- Status de operador, operador, status de sinaleiro e sinaleiro foram preservados.
+- Demais módulos do sistema não foram alterados.

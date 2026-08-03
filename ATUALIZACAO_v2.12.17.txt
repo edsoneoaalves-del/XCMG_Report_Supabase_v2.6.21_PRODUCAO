@@ -1,0 +1,9 @@
+XCMG Report v2.12.17
+
+- Adicionado o campo Substitui no Status do Efetivo.
+- Equipamento passou a ser cadastrado em um único campo, por exemplo: 1JA230 70t.
+- Removido o campo separado de capacidade do formulário do Status do Efetivo.
+- Dados antigos com prefixo e capacidade separados são migrados automaticamente.
+- Prefixos antigos no formato '1JA405 SUB. 1JA342' são separados automaticamente entre Equipamento e Substitui.
+- Mensagem ao cliente mantém o padrão: 1JA405 70t SUB. 1JA342.
+- Cache PWA atualizado para v2.12.17.

@@ -1,0 +1,13 @@
+XCMG REPORT v2.12.8
+
+STATUS DO EFETIVO — REORGANIZAÇÃO CORPORATIVA
+
+- Cabeçalho superior reduzido e reorganizado.
+- Dados do turno concentrados em uma única faixa compacta.
+- Filtros destacados como principal área operacional.
+- Categorias e tabela priorizadas na tela.
+- Barra inferior de ações reorganizada e mantida.
+- Botões Novo status, Salvar rascunho, Adicionar categoria, Gerar mensagem, Copiar e Compartilhar preservados.
+- Campos e regras existentes preservados.
+- Layout responsivo para computador e celular.
+- Cache PWA atualizado para v2.12.8.

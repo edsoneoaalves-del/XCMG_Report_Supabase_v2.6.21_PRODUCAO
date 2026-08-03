@@ -1,0 +1,7 @@
+XCMG Report v2.12.16
+
+- Equipamentos do Status do Efetivo permanecem salvos no navegador.
+- Campo Equipamento agora é exibido no padrão do Painel Operacional.
+- Botão Detalhes permite editar prefixo, capacidade e categoria.
+- Botão Novo equipamento abre formulário de cadastro.
+- Alterações são persistidas e permanecem após recarregar a página.

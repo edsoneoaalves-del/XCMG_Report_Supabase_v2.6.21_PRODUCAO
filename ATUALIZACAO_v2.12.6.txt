@@ -1,0 +1,10 @@
+XCMG Report v2.12.6
+
+CORREÇÃO — STATUS DO EFETIVO
+
+- Corrigida a estrutura da tabela que comprimida os campos no lado esquerdo.
+- Restaurado o alinhamento correto entre cabeçalhos, campos e botões.
+- Mantidos todos os campos, o botão Salvar e o controle Pendente/Conferido.
+- Mantida a interface operacional semelhante ao painel Equipamentos.
+- Layout responsivo preservado: tabela no computador e cartões no celular.
+- Cache PWA atualizado para carregar a correção.

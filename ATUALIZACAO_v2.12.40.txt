@@ -1,0 +1,9 @@
+XCMG Report v2.12.40
+
+- Qualquer alteração em uma linha muda automaticamente o Controle para ⚠ Pendente.
+- Após salvar com sucesso, o Controle muda automaticamente para ✓ Conferido.
+- O Controle deixou de ser alternado manualmente.
+- Incluído contador de linhas pendentes no painel de Equipamentos.
+- Incluído aviso ao sair, trocar de tela ou atualizar com alterações pendentes.
+- Mantida a posição da página, sem rolagem ao salvar ou atualizar o controle.
+- Layout e demais funcionalidades preservados.

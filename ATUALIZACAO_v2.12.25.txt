@@ -1,0 +1,7 @@
+XCMG Report v2.12.25
+
+Correção exclusiva do controle interno de conferência:
+- coluna Controle fixada antes da coluna Ações;
+- removida a sobreposição que cortava Pendente/Conferido;
+- largura do botão e da coluna ajustadas;
+- demais funcionalidades preservadas.

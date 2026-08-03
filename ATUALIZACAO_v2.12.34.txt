@@ -1,0 +1,6 @@
+XCMG REPORT v2.12.34
+
+- Corrigido o seletor visual da coluna Status.
+- O indicador verde, amarelo ou vermelho agora é renderizado por um elemento próprio, sem depender da exibição de emoji do navegador.
+- A seta do seletor foi mantida.
+- Nenhum outro campo, botão ou regra do sistema foi alterado.

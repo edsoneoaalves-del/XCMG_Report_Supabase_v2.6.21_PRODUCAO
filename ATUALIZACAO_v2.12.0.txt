@@ -1,0 +1,13 @@
+XCMG REPORT v2.12.0 — STATUS INICIAL DO TURNO
+
+- Criada opção “Status Inicial do Turno” no menu lateral.
+- Tela independente do Relatório Operacional e do turno anterior.
+- Título, data, turno e dia da semana totalmente editáveis.
+- Categorias editáveis, removíveis, adicionáveis e reordenáveis.
+- Equipamentos totalmente editáveis: status, prefixo, capacidade, local/área, operador, sinaleiro e observação.
+- Inclusão e remoção livre de equipamentos.
+- Salvamento de rascunho no aparelho.
+- Geração, cópia e compartilhamento da mensagem para o cliente.
+- Modelo inicial preenchido conforme o padrão operacional informado.
+- Cache PWA atualizado para v2.12.0.
+- Relatório Operacional existente preservado.

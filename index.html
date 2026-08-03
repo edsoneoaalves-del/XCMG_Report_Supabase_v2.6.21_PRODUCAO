@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=2.11.3">
+  <link rel="stylesheet" href="css/style.css?v=2.12.45">
 </head>
 <body>
   <section class="pwa-install-banner hidden" id="pwaInstallBanner" aria-live="polite">
@@ -59,6 +59,7 @@
       <nav id="nav">
         <button class="nav-item active" data-page="dashboard">▦ <span>Dashboard</span></button>
         <button class="nav-item" data-page="equipamentos">▤ <span>Equipamentos</span></button>
+        <button class="nav-item" data-page="status-inicial">📋 <span>Status do Efetivo</span></button>
         <button class="nav-item" data-page="relatorios">▧ <span>Relatórios</span></button>
         <button class="nav-item" data-page="historico">◷ <span>Histórico</span></button>
         <button class="nav-item" data-page="manutencao">🔧 <span>Histórico Manutenção</span></button>
@@ -91,10 +92,65 @@
           <div class="search"><span>⌕</span><input id="searchInput" placeholder="Pesquisar por prefixo, categoria ou local..."></div>
           <select id="filterCategory"><option value="">Todas as categorias</option></select>
           <select id="filterStatus"><option value="">Todos os status</option></select>
+          <span class="pending-count all-saved" id="equipmentPendingCount">Pendentes: 0</span>
           <button class="btn primary" id="newEquipmentBtn">+ Novo equipamento</button>
         </div>
         <div class="equipment-grid" id="equipmentGrid"></div>
         <div class="empty hidden" id="equipmentEmpty">Nenhum equipamento encontrado.</div>
+      </section>
+
+
+      <section class="page" id="page-status-inicial">
+        <div class="initial-frozen-header">
+        <article class="panel initial-command-bar">
+          <div class="initial-command-main">
+            <div class="initial-command-copy">
+              <span class="initial-section-kicker">COMUNICAÇÃO OPERACIONAL • XCMG</span>
+              <h2>Status do Efetivo</h2>
+              <p>Primeira informação operacional enviada ao cliente no início do turno.</p>
+            </div>
+          </div>
+          <div class="initial-meta-grid initial-meta-inline">
+            <label class="initial-meta-title"><span>Título do comunicado</span><input id="initialTitle" value="Status XCMG MINA"></label>
+            <label><span>Data</span><input type="date" id="initialDate"></label>
+            <label><span>Turno</span><input id="initialTeam" placeholder="Ex.: TURNO D"></label>
+            <label><span>Dia da semana</span><input id="initialWeekday" placeholder="Ex.: SÁBADO"></label>
+          </div>
+        </article>
+
+        <div class="toolbar initial-filter-toolbar" aria-label="Filtros do status do efetivo">
+          <div class="search"><span>⌕</span><input id="initialSearchInput" placeholder="Pesquisar por prefixo, categoria, operador, sinaleiro ou local..."></div>
+          <select id="initialFilterCategory" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option></select>
+          <select id="initialFilterStatus" aria-label="Filtrar por status">
+            <option value="">Todos os status</option>
+            <option value="green">Com operador</option>
+            <option value="yellow">Sem operador</option>
+            <option value="red">Em manutenção</option>
+            <option value="checked">Conferido</option>
+            <option value="pending">Pendente</option>
+          </select>
+          <button class="btn primary" id="initialNewEquipmentBtn" type="button">＋ Novo equipamento</button>
+          <button class="btn hidden" id="initialClearFiltersBtn" type="button">Limpar filtros</button>
+        </div>
+        </div>
+
+        <div id="initialCategories" class="initial-categories"></div>
+
+        <div class="initial-main-actions initial-footer-actions">
+          <button class="btn initial-btn-secondary" id="initialAddCategoryBtn" type="button">＋ Adicionar categoria</button>
+          <div class="initial-primary-actions">
+            <button class="btn primary initial-generate-button" id="initialGenerateBtn" type="button">⚡ Gerar mensagem</button>
+            <button class="btn initial-copy-direct" id="initialCopyBtn" type="button">📋 Copiar</button>
+            <button class="btn primary" id="initialShareBtn" type="button">↗ Compartilhar</button>
+          </div>
+        </div>
+
+        <article class="panel initial-preview-panel">
+          <div class="panel-head initial-preview-head">
+            <div><span class="initial-section-kicker">COMUNICAÇÃO FINAL</span><h2>Mensagem pronta para envio</h2><p class="muted">Revise as informações antes de copiar ou compartilhar.</p></div>
+          </div>
+          <textarea id="initialOutput" class="report-output initial-output" spellcheck="false" wrap="off"></textarea>
+        </article>
       </section>
 
       <section class="page" id="page-relatorios">
@@ -182,6 +238,23 @@
         </div>
       </section>
     </main>
+  </div>
+
+
+  <div class="modal-backdrop hidden" id="initialEquipmentModalBackdrop">
+    <div class="modal initial-equipment-modal">
+      <div class="modal-head"><h2 id="initialEquipmentModalTitle">Editar equipamento</h2><button class="icon-btn" id="closeInitialEquipmentModalBtn" type="button">×</button></div>
+      <form id="initialEquipmentForm">
+        <input type="hidden" id="initialEquipmentEditId">
+        <div class="form-grid">
+          <label>Equipamento*<input id="initialEquipmentPrefix" required list="initialEquipmentCatalog" placeholder="Selecione ou digite: 1JA230 70t" autocomplete="off"><datalist id="initialEquipmentCatalog"></datalist></label>
+          <label>Substitui<input id="initialEquipmentSubstitute" list="initialSubstituteCatalog" placeholder="Selecione ou digite: 1JA342" autocomplete="off"><datalist id="initialSubstituteCatalog"></datalist></label>
+          <label class="full">Categoria*<select id="initialEquipmentCategory" required></select></label>
+        </div>
+        <p class="muted">O equipamento ficará salvo no Status do Efetivo e poderá ser editado novamente pelo botão Detalhes.</p>
+        <div class="actions end"><button type="button" class="btn" id="cancelInitialEquipmentModalBtn">Cancelar</button><button type="submit" class="btn primary">Salvar equipamento</button></div>
+      </form>
+    </div>
   </div>
 
   <div class="modal-backdrop hidden" id="modalBackdrop">
@@ -281,8 +354,35 @@
 
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/offline-sync.js?v=2.11.3"></script>
-  <script src="js/app.js?v=2.11.3"></script>
-  <script src="js/pwa.js?v=2.11.3" defer></script>
+  <script src="js/offline-sync.js?v=2.12.42"></script>
+  <script src="js/status-inicial.js?v=2.12.45"></script>
+  <script src="js/app.js?v=2.12.45"></script>
+  <script src="js/pwa.js?v=2.12.45" defer></script>
+
+  <script>
+    // v2.12.45: mantém o cabeçalho da tabela visível e ajusta a área útil à tela.
+    (() => {
+      const updateInitialTableHeight = () => {
+        if (window.innerWidth <= 800) return;
+        const page = document.getElementById('page-status-inicial');
+        const wrap = page?.querySelector('.initial-table-wrap');
+        if (!page?.classList.contains('active') || !wrap) return;
+        const top = wrap.getBoundingClientRect().top;
+        const available = Math.max(260, window.innerHeight - top - 18);
+        wrap.style.setProperty('--initial-table-available-height', `${available}px`);
+      };
+      window.addEventListener('resize', updateInitialTableHeight, { passive: true });
+      document.addEventListener('click', () => requestAnimationFrame(updateInitialTableHeight));
+      document.addEventListener('DOMContentLoaded', () => {
+        updateInitialTableHeight();
+        const page = document.getElementById('page-status-inicial');
+        if (page && 'MutationObserver' in window) {
+          new MutationObserver(() => requestAnimationFrame(updateInitialTableHeight))
+            .observe(page, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
+        }
+      });
+    })();
+  </script>
+
 </body>
 </html>

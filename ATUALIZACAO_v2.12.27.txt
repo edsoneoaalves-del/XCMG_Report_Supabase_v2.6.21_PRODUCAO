@@ -1,0 +1,7 @@
+XCMG REPORT v2.12.27
+
+- Mantido o layout atual do Status do Efetivo.
+- Restaurado o botão Observação em cada equipamento.
+- Restaurados e alinhados os botões Salvar, Detalhes e Excluir.
+- Ajustadas as larguras das colunas Observação, Controle e Ações.
+- Nenhuma regra operacional foi alterada.

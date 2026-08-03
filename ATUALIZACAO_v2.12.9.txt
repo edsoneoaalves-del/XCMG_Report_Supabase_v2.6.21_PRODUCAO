@@ -1,0 +1,11 @@
+XCMG REPORT v2.12.9 — STATUS DO EFETIVO EM LISTA ÚNICA
+
+Alterações:
+- Removidas as barras visuais individuais das categorias.
+- Todos os equipamentos agora aparecem em uma única tabela contínua.
+- A visualização é controlada somente pela pesquisa e pelos filtros de categoria e status.
+- Incluída a coluna Categoria em cada equipamento, permitindo alterar o grupo diretamente na linha.
+- Mantidos os campos, botões Salvar, controle Pendente/Conferido, exclusão e geração da mensagem.
+- Mantido o botão para adicionar categoria e o botão Novo equipamento.
+- Layout responsivo preservado para computador e celular.
+- Cache PWA atualizado para v2.12.9.
