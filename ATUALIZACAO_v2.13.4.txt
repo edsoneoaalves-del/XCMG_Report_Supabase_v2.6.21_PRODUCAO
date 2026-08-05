@@ -1,0 +1,8 @@
+XCMG REPORT v2.13.4
+
+CORREÇÃO DE SESSÃO / LOGIN
+- Corrigido o logout automático poucos segundos após entrar.
+- A sessão ativa agora é armazenada separadamente dos usuários sincronizados.
+- O login permanece após atualização da página, atualização do Supabase e troca de versão da PWA.
+- O usuário só é desconectado ao clicar em Sair ou se o acesso deixar de existir.
+- Cache da PWA atualizado para v2.13.4.

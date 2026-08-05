@@ -3,9 +3,45 @@
   const STORAGE_KEY='xcmg_report_initial_status_v1';
   const STATUS_CONFIG_KEY='xcmg_report_effective_status_config_v1';
   const cloud=()=>window.XCMGCloudStorage;
-  function persistCloud(key,value){
+  let dirty=false;
+  let lastRemoteStamp='';
+  let cloudPullRunning=false;
+  async function persistCloud(key,value){
     localStorage.setItem(key,JSON.stringify(value));
-    Promise.resolve(cloud()?.set?.(key,value)).catch(error=>console.error('Falha ao sincronizar Status do Efetivo:',error));
+    dirty=false;
+    try{
+      const ok=await cloud()?.set?.(key,value);
+      if(ok===false)throw new Error('Supabase não confirmou a gravação.');
+      const record=await cloud()?.getRecord?.(key);
+      if(record?.updatedAt)lastRemoteStamp=record.updatedAt;
+      return true;
+    }catch(error){
+      console.error('Falha ao sincronizar Status do Efetivo:',error);
+      toast('Salvo neste aparelho. Aguardando sincronização com os demais dispositivos.');
+      return false;
+    }
+  }
+  async function pullCloud(force=false){
+    if(cloudPullRunning||!cloud()?.getRecord)return false;
+    if(dirty&&!force)return false;
+    cloudPullRunning=true;
+    try{
+      let changed=false;
+      for(const key of [STORAGE_KEY,STATUS_CONFIG_KEY]){
+        const record=await cloud().getRecord(key);
+        if(!record||record.value===null||record.value===undefined)continue;
+        const localRaw=localStorage.getItem(key);
+        const remoteRaw=JSON.stringify(record.value);
+        if(localRaw!==remoteRaw){
+          localStorage.setItem(key,remoteRaw);
+          changed=true;
+        }
+        if(record.updatedAt)lastRemoteStamp=record.updatedAt;
+      }
+      if(changed){reloadFromStorage();return true;}
+      return false;
+    }catch(error){console.warn('Falha ao buscar Status do Efetivo no Supabase:',error);return false}
+    finally{cloudPullRunning=false}
   }
   const DEFAULT_STATUS_CONFIG=[
     {key:'green',emoji:'🟢',label:'Com operador / com sinaleiro'},
@@ -252,7 +288,7 @@
     data.categories.forEach(c=>{const valid=c.items.filter(x=>x.prefix||x.notes||x.operator||x.location);if(!c.name&&!valid.length)return;out+=`\n\n*${c.name}*\n`;valid.forEach(x=>{out+=`\n${lineFor(x)}\n`})});
     out+=`\n\nLegenda:\n${statusConfig.map(x=>`${x.emoji} ${x.label}`).join('\n')}\n\n📱 Gerado por XCMG REPORT`;return out.trim()}
   function generate(){const o=$('#initialOutput');if(o)o.value=text()}
-  function save(){capture();persistCloud(STORAGE_KEY,data);generate();toast('Status do efetivo salvo e enviado para sincronização')}
+  async function save(){capture();const ok=await persistCloud(STORAGE_KEY,data);generate();toast(ok?'Status do efetivo sincronizado com os aparelhos':'Status salvo neste aparelho; sincronização pendente')}
   function addItem(cat){
     capture();
     const categoryId=typeof cat==='string'?cat:cat?.dataset?.id;
@@ -383,12 +419,12 @@
     const btn=row.querySelector('[data-control-toggle]');
     if(btn){btn.classList.toggle('checked',value==='checked');btn.classList.toggle('pending',value!=='checked');btn.textContent=controlLabel(value)}
   }
-  function persistRow(row,markChecked=true){
+  async function persistRow(row,markChecked=true){
     if(markChecked)setRowControl(row,'checked');
     capture();
-    persistCloud(STORAGE_KEY,data);
+    const ok=await persistCloud(STORAGE_KEY,data);
     generate();
-    toast(markChecked?'Equipamento salvo e conferido':'Controle interno atualizado');
+    toast(ok?(markChecked?'Equipamento salvo, conferido e sincronizado':'Controle interno atualizado e sincronizado'):'Alteração salva neste aparelho; sincronização pendente');
   }
   function openStatusConfig(){
     const body=$('#initialStatusConfigRows');
@@ -423,8 +459,8 @@
     $('#cancelInitialEquipmentModalBtn')?.addEventListener('click',closeEquipmentEditor);
     $('#initialDate')?.addEventListener('change',e=>{$('#initialWeekday').value=weekday(e.target.value);generate()});
     ['initialTitle','initialTeam','initialWeekday'].forEach(id=>$('#'+id)?.addEventListener('input',generate));
-    $('#initialCategories')?.addEventListener('input',e=>{const row=e.target.closest('.initial-item');if(row&&!e.target.matches('[data-control-toggle],[data-save-row]'))setRowControl(row,'pending');applyFilters();generate()});
-    $('#initialCategories')?.addEventListener('change',e=>{const row=e.target.closest('.initial-item');if(row)setRowControl(row,'pending');if(e.target.matches('[data-field="status"]')){const control=e.target.closest('.initial-status-control');if(control)control.dataset.status=e.target.value;}if(e.target.matches('[data-field="equipment"]'))syncEquipment(e.target);if(e.target.matches('[data-field="operatorStatus"],[data-field="signalmanStatus"]'))syncPersonFields(e.target);applyFilters();generate()});
+    $('#initialCategories')?.addEventListener('input',e=>{dirty=true;const row=e.target.closest('.initial-item');if(row&&!e.target.matches('[data-control-toggle],[data-save-row]'))setRowControl(row,'pending');applyFilters();generate()});
+    $('#initialCategories')?.addEventListener('change',e=>{dirty=true;const row=e.target.closest('.initial-item');if(row)setRowControl(row,'pending');if(e.target.matches('[data-field="status"]')){const control=e.target.closest('.initial-status-control');if(control)control.dataset.status=e.target.value;}if(e.target.matches('[data-field="equipment"]'))syncEquipment(e.target);if(e.target.matches('[data-field="operatorStatus"],[data-field="signalmanStatus"]'))syncPersonFields(e.target);applyFilters();generate()});
     $('#initialCategories')?.addEventListener('click',e=>{const row=e.target.closest('.initial-item');if(e.target.closest('[data-save-row]')&&row)persistRow(row,true);else if(e.target.closest('[data-edit-equipment]')&&row){const btn=e.target.closest('[data-edit-equipment]');openEquipmentEditor(row,btn.dataset.editId||row.dataset.id||'')}else if(e.target.closest('[data-control-toggle]')&&row){setRowControl(row,row.dataset.control==='checked'?'pending':'checked');persistRow(row,false)}else if(e.target.closest('[data-remove-item]')&&row)removeItem(row)});
     $('#initialAddCategoryBtn')?.addEventListener('click',addCategory);
     $('#initialGenerateBtn')?.addEventListener('click',()=>{generate();toast('Mensagem atualizada')});
@@ -443,8 +479,17 @@
     }
   });
   let initialized=false;
-  function init(){if(initialized)return;initialized=true;load();bind();render()}
-  window.XCMGInitialStatus={init,render,generate,reloadFromStorage};
+  function init(){
+    if(initialized)return;
+    initialized=true;
+    load();bind();render();
+    window.addEventListener('online',()=>setTimeout(()=>pullCloud(false),900));
+    window.addEventListener('focus',()=>pullCloud(false));
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pullCloud(false)});
+    setInterval(()=>{if(document.visibilityState==='visible')pullCloud(false)},12000);
+    setTimeout(()=>pullCloud(false),1800);
+  }
+  window.XCMGInitialStatus={init,render,generate,reloadFromStorage,pullCloud};
 })();
 
 // v2.12.23 — Equipamentos em negrito na mensagem e substituição no formato (SUB. PREFIXO).

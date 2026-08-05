@@ -3,6 +3,7 @@
   const LEGACY_KEY='xcmg_report_v1';
   const AUTH_KEY='xcmg_report_auth_v1';
   const AUTH_BACKUP_KEY='xcmg_report_auth_backup_v1';
+  const SESSION_KEY='xcmg_report_active_session_v1';
   const TURN_KEY='xcmg_report_last_turn_v1';
   const MAINT_HISTORY_KEY='xcmg_report_maintenance_history_v1';
   const STATUS_CONFIG_KEY='xcmg_report_equipment_statuses_v1';
@@ -24,14 +25,18 @@
     }
   }
   function connectionIsOnline(){return window.XCMGOfflineSync?.isOnline?.()===true}
-  async function remoteGet(key){
+  async function remoteGetRecord(key){
     if(!connectionIsOnline())return null;
     if(!supabaseClient){showSyncWarning(new Error('Biblioteca do Supabase não carregada.'));return null}
     try{
-      const {data,error}=await supabaseClient.from(SUPABASE_TABLE).select('value').eq('key',key).maybeSingle();
+      const {data,error}=await supabaseClient.from(SUPABASE_TABLE).select('value,updated_at').eq('key',key).maybeSingle();
       if(error)throw error;
-      return data?.value??null;
+      return data?{value:data.value,updatedAt:data.updated_at||null}:null;
     }catch(error){if(navigator.onLine===false)await window.XCMGOfflineSync?.markOffline?.();else await window.XCMGOfflineSync?.markSyncError?.();showSyncWarning(error);return null}
+  }
+  async function remoteGet(key){
+    const record=await remoteGetRecord(key);
+    return record?.value??null;
   }
   async function directRemoteSet(key,value){
     if(!supabaseClient||!connectionIsOnline())return false;
@@ -82,8 +87,10 @@
   }
   window.XCMGCloudStorage={
     get:remoteGet,
+    getRecord:remoteGetRecord,
     set:remoteSet,
     delete:remoteDelete,
+    isOnline:connectionIsOnline,
     table:SUPABASE_TABLE
   };
   async function flushOfflineQueue(){
@@ -361,7 +368,26 @@
     auth.currentUserId=null;
     localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
     if(auth.users.length)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
-    currentUser=null;
+
+    // A sessão do aparelho é separada da lista de usuários sincronizada.
+    // Assim, uma atualização do Supabase, do Service Worker ou da página não
+    // apaga o login poucos segundos depois da autenticação.
+    let savedSession=null;
+    try{savedSession=JSON.parse(localStorage.getItem(SESSION_KEY))}catch{}
+    currentUser=savedSession
+      ? auth.users.find(u=>u.id===savedSession.userId)
+        ||auth.users.find(u=>u.username===savedSession.username)
+        ||null
+      : null;
+    if(currentUser){
+      localStorage.setItem(SESSION_KEY,JSON.stringify({
+        userId:currentUser.id,
+        username:currentUser.username,
+        loggedAt:savedSession?.loggedAt||new Date().toISOString()
+      }));
+    }else if(savedSession){
+      localStorage.removeItem(SESSION_KEY);
+    }
   }
   function authPersistentPayload(){
     return {...auth,currentUserId:null};
@@ -1272,9 +1298,15 @@
     }
     // Mantém uma cópia local dos acessos para o próximo login sem internet.
     localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
-    currentUser=user;startSession();
+    currentUser=user;
+    localStorage.setItem(SESSION_KEY,JSON.stringify({
+      userId:user.id,
+      username:user.username,
+      loggedAt:new Date().toISOString()
+    }));
+    startSession();
   }
-  function logout(){if(hasPendingEquipmentChanges()&&!confirm('Existem alterações que ainda não foram salvas. Deseja realmente sair?'))return;flushAutoTurnSave();auth.currentUserId=null;localStorage.setItem(AUTH_KEY,JSON.stringify(authPersistentPayload()));currentUser=null;location.reload()}
+  function logout(){if(hasPendingEquipmentChanges()&&!confirm('Existem alterações que ainda não foram salvas. Deseja realmente sair?'))return;flushAutoTurnSave();auth.currentUserId=null;localStorage.setItem(AUTH_KEY,JSON.stringify(authPersistentPayload()));localStorage.removeItem(SESSION_KEY);currentUser=null;location.reload()}
   function startSession(){
     state=loadUserState(currentUser.id);$('#loginScreen').classList.add('hidden');$('.app-shell').classList.remove('hidden');
     $('#currentUserName').textContent=currentUser.name;$('#currentUserTeam').textContent=currentUser.team;

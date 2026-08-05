@@ -1,0 +1,12 @@
+XCMG REPORT v2.13.3
+
+CORREÇÃO PRINCIPAL
+- Status do Efetivo agora confirma a gravação no Supabase.
+- Atualização automática nos demais aparelhos a cada 12 segundos.
+- Atualização ao voltar para a tela, recuperar internet ou recarregar o aplicativo.
+- Mantém alterações locais pendentes sem sobrescrever campos ainda não salvos.
+- Mensagem diferencia sincronização confirmada de sincronização pendente.
+- Cache PWA atualizado para obrigar os aparelhos a receberem a correção.
+
+PUBLICAÇÃO
+Substitua os arquivos no GitHub e aguarde o deploy da Vercel. Depois feche e abra o aplicativo nos aparelhos.
