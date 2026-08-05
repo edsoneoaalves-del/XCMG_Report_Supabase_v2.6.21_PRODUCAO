@@ -1,0 +1,9 @@
+XCMG REPORT v2.13.6
+
+CORREÇÃO DE SINCRONIZAÇÃO DOS EQUIPAMENTOS
+
+- Corrigida a função Salvar, que não enviava o estado dos equipamentos ao Supabase.
+- Alterações agora são gravadas localmente e sincronizadas entre celulares e computadores.
+- Envios rápidos são processados em fila para preservar a ordem das alterações.
+- Eventos Realtime antigos não sobrescrevem uma edição local mais recente.
+- Cache do PWA atualizado para forçar o carregamento dos arquivos corrigidos.

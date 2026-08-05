@@ -277,6 +277,8 @@
   let currentUser=null;
   let autoTurnEnabled=false;
   let autoTurnTimer=null;
+  let userStateSaveChain=Promise.resolve();
+  let userStateWritesPending=0;
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
   function isConsultation(){return currentUser?.role!=='admin'&&currentUser?.accessLevel==='consultation'}
   function canOperate(){return !isConsultation()}
@@ -501,10 +503,16 @@
   }
   function save(){
     if(!currentUser||isConsultation())return;
-    // Não envia automaticamente o estado local ao entrar. Primeiro busca a
-    // versão mais recente do Supabase para impedir que um aparelho antigo
-    // sobrescreva os equipamentos atualizados em outro dispositivo.
-    syncCurrentUserStateFromRemote({render:true,notify:false});
+    const key=USER_KEY(currentUser.id);
+    const snapshot=clone(state);
+    // Grava imediatamente no aparelho e envia ao Supabase em fila. A fila
+    // preserva a ordem das alterações rápidas feitas em celular ou computador.
+    localStorage.setItem(key,JSON.stringify(snapshot));
+    userStateWritesPending++;
+    userStateSaveChain=userStateSaveChain
+      .catch(()=>{})
+      .then(()=>remoteSet(key,snapshot))
+      .finally(()=>{userStateWritesPending=Math.max(0,userStateWritesPending-1)});
     scheduleAutoTurnSave();
   }
   function scheduleAutoTurnSave(delay=500){
@@ -1448,9 +1456,9 @@
         if(payload.eventType==='DELETE')localStorage.removeItem(key);
         else if(Object.prototype.hasOwnProperty.call(row,'value'))localStorage.setItem(key,JSON.stringify(row.value));
         if(currentUser&&key===USER_KEY(currentUser.id)&&payload.eventType!=='DELETE'){
-          // O evento do próprio aparelho também pode chegar; aplicar o valor
-          // remoto é seguro e mantém todas as telas com o mesmo estado.
-          applyRemoteUserState(row.value,row.updated_at,{notify:true});
+          // Durante envios locais em sequência, ignora o eco Realtime de uma
+          // gravação anterior para não desfazer a alteração mais recente.
+          if(userStateWritesPending===0)applyRemoteUserState(row.value,row.updated_at,{notify:true});
         }
         if(key===MAINT_HISTORY_KEY){
           loadMaintenanceHistory();
