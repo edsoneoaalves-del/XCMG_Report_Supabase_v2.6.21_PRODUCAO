@@ -2,6 +2,11 @@
   'use strict';
   const STORAGE_KEY='xcmg_report_initial_status_v1';
   const STATUS_CONFIG_KEY='xcmg_report_effective_status_config_v1';
+  const cloud=()=>window.XCMGCloudStorage;
+  function persistCloud(key,value){
+    localStorage.setItem(key,JSON.stringify(value));
+    Promise.resolve(cloud()?.set?.(key,value)).catch(error=>console.error('Falha ao sincronizar Status do Efetivo:',error));
+  }
   const DEFAULT_STATUS_CONFIG=[
     {key:'green',emoji:'🟢',label:'Com operador / com sinaleiro'},
     {key:'orange',emoji:'🟠',label:'Sem operador / sem sinaleiro'},
@@ -247,7 +252,7 @@
     data.categories.forEach(c=>{const valid=c.items.filter(x=>x.prefix||x.notes||x.operator||x.location);if(!c.name&&!valid.length)return;out+=`\n\n*${c.name}*\n`;valid.forEach(x=>{out+=`\n${lineFor(x)}\n`})});
     out+=`\n\nLegenda:\n${statusConfig.map(x=>`${x.emoji} ${x.label}`).join('\n')}\n\n📱 Gerado por XCMG REPORT`;return out.trim()}
   function generate(){const o=$('#initialOutput');if(o)o.value=text()}
-  function save(){capture();localStorage.setItem(STORAGE_KEY,JSON.stringify(data));generate();toast('Rascunho do status do efetivo salvo')}
+  function save(){capture();persistCloud(STORAGE_KEY,data);generate();toast('Status do efetivo salvo e enviado para sincronização')}
   function addItem(cat){
     capture();
     const categoryId=typeof cat==='string'?cat:cat?.dataset?.id;
@@ -348,8 +353,8 @@
     const target=data.categories.find(c=>c.id===categoryId);if(!target)return;
     if(current){current.prefix=prefix;current.capacity='';current.substitute=substitute;target.items.push(current)}
     else target.items.push(item('green',prefix,'','','','','','','',substitute));
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
-    closeEquipmentEditor();render();toast(id?'Equipamento atualizado':'Equipamento cadastrado');
+    persistCloud(STORAGE_KEY,data);
+    closeEquipmentEditor();render();toast(id?'Equipamento atualizado e sincronizado':'Equipamento cadastrado e sincronizado');
   }
   function addFilteredEquipment(){openEquipmentEditor(null)}
   function clearFilters(){
@@ -381,7 +386,7 @@
   function persistRow(row,markChecked=true){
     if(markChecked)setRowControl(row,'checked');
     capture();
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+    persistCloud(STORAGE_KEY,data);
     generate();
     toast(markChecked?'Equipamento salvo e conferido':'Controle interno atualizado');
   }
@@ -396,13 +401,13 @@
     event.preventDefault();
     const rows=[...document.querySelectorAll('#initialStatusConfigRows .initial-status-config-row')];
     statusConfig=rows.map(row=>({key:row.dataset.key,emoji:row.querySelector('.initial-status-config-emoji').value.trim()||statusDef(row.dataset.key).emoji,label:row.querySelector('.initial-status-config-label').value.trim()||statusDef(row.dataset.key).label}));
-    localStorage.setItem(STATUS_CONFIG_KEY,JSON.stringify(statusConfig));
-    closeStatusConfig();render();toast('Legenda do Status do Efetivo atualizada');
+    persistCloud(STATUS_CONFIG_KEY,statusConfig);
+    closeStatusConfig();render();toast('Legenda do Status do Efetivo atualizada e sincronizada');
   }
   function resetStatusConfig(){
     statusConfig=DEFAULT_STATUS_CONFIG.map(x=>({...x}));
-    localStorage.setItem(STATUS_CONFIG_KEY,JSON.stringify(statusConfig));
-    openStatusConfig();toast('Legenda padrão restaurada');
+    persistCloud(STATUS_CONFIG_KEY,statusConfig);
+    openStatusConfig();toast('Legenda padrão restaurada e sincronizada');
   }
   function bind(){
     // Vinculação direta e reaplicada após cada renderização.
@@ -426,9 +431,20 @@
     $('#initialCopyBtn')?.addEventListener('click',async()=>{generate();await navigator.clipboard.writeText($('#initialOutput').value);toast('Status do efetivo copiado')});
     $('#initialShareBtn')?.addEventListener('click',async()=>{generate();const text=$('#initialOutput').value;if(navigator.share)await navigator.share({title:'Status do Efetivo',text});else{await navigator.clipboard.writeText(text);toast('Copiado para compartilhar')}});
   }
+  function reloadFromStorage(){
+    load();
+    if(initialized)render();
+  }
+  window.addEventListener('xcmg-cloud-update',event=>{
+    const key=event.detail?.key;
+    if(key===STORAGE_KEY||key===STATUS_CONFIG_KEY){
+      reloadFromStorage();
+      toast(key===STORAGE_KEY?'Status do efetivo atualizado em outro dispositivo':'Legenda do status atualizada');
+    }
+  });
   let initialized=false;
   function init(){if(initialized)return;initialized=true;load();bind();render()}
-  window.XCMGInitialStatus={init,render,generate};
+  window.XCMGInitialStatus={init,render,generate,reloadFromStorage};
 })();
 
 // v2.12.23 — Equipamentos em negrito na mensagem e substituição no formato (SUB. PREFIXO).

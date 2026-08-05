@@ -2821,3 +2821,21 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
 .fleet-bar-count{text-align:right;font-size:12px;color:var(--text);white-space:nowrap}
 @media(max-width:900px){.fleet-bar-row{grid-template-columns:185px minmax(110px,1fr) 100px;gap:10px}.fleet-bar-label small{white-space:normal}.fleet-bar-count{font-size:10px}}
 @media(max-width:600px){.fleet-status-panel{padding:14px}.fleet-status-panel .panel-head{margin-bottom:12px}.fleet-bar-row{grid-template-columns:1fr;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}.fleet-bar-row:last-child{border-bottom:0}.fleet-bar-label{padding-right:90px;position:relative}.fleet-bar-count{position:absolute;right:14px;margin-top:8px}.fleet-bar-track{height:14px}.fleet-bar-icon{width:30px;height:30px;flex-basis:30px}.fleet-bar-label strong{font-size:12px}.fleet-bar-label small{font-size:9px}}
+
+
+/* v2.13.2 — Evita zoom automático ao focar campos no celular (iOS/Android).
+   O Safari amplia a página quando o tamanho computado do campo é menor que 16px. */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

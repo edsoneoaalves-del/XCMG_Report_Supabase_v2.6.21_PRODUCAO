@@ -6,6 +6,8 @@
   const TURN_KEY='xcmg_report_last_turn_v1';
   const MAINT_HISTORY_KEY='xcmg_report_maintenance_history_v1';
   const STATUS_CONFIG_KEY='xcmg_report_equipment_statuses_v1';
+  const INITIAL_STATUS_KEY='xcmg_report_initial_status_v1';
+  const INITIAL_STATUS_CONFIG_KEY='xcmg_report_effective_status_config_v1';
   const USER_KEY=id=>`xcmg_report_user_${id}`;
   const SUPABASE_URL='https://dqslcjxetirfhcftaqjz.supabase.co';
   const SUPABASE_KEY='sb_publishable_hRARb5cN-tFqp0uJDpXFCA_ASKtJopY';
@@ -78,6 +80,12 @@
       return true;
     }
   }
+  window.XCMGCloudStorage={
+    get:remoteGet,
+    set:remoteSet,
+    delete:remoteDelete,
+    table:SUPABASE_TABLE
+  };
   async function flushOfflineQueue(){
     if(!window.XCMGOfflineSync||!connectionIsOnline()||!supabaseClient)return;
     window.XCMGOfflineSync.emit({syncing:true});
@@ -89,7 +97,7 @@
   }
   async function hydrateRemoteCache(){
     const pendingKeys=new Set(await window.XCMGOfflineSync?.pendingKeys?.()||[]);
-    const keys=[AUTH_KEY,TURN_KEY,MAINT_HISTORY_KEY,STATUS_CONFIG_KEY];
+    const keys=[AUTH_KEY,TURN_KEY,MAINT_HISTORY_KEY,STATUS_CONFIG_KEY,INITIAL_STATUS_KEY,INITIAL_STATUS_CONFIG_KEY];
     for(const key of keys){
       if(pendingKeys.has(key))continue;
       const value=await remoteGet(key);
@@ -1355,6 +1363,24 @@
     $('#importInput').onchange=async e=>{if(denyConsultation())return;try{const data=JSON.parse(await e.target.files[0].text());if(!data.equipments)throw Error();state=data;state.equipments=state.equipments.map(migrateEquipment);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Backup importado')}catch{alert('Arquivo de backup inválido.')}};
     $('#resetBtn').onclick=()=>{if(denyConsultation())return;if(confirm('Restaurar todos os dados iniciais?')){state=clone(initial);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Dados restaurados')}};
   }
+  function setupRealtimeSync(){
+    if(!supabaseClient)return;
+    supabaseClient.channel('xcmg-app-storage-sync')
+      .on('postgres_changes',{event:'*',schema:'public',table:SUPABASE_TABLE},payload=>{
+        const row=payload.new||payload.old||{};
+        const key=row.key;
+        if(!key)return;
+        if(payload.eventType==='DELETE')localStorage.removeItem(key);
+        else if(Object.prototype.hasOwnProperty.call(row,'value'))localStorage.setItem(key,JSON.stringify(row.value));
+        if(key===MAINT_HISTORY_KEY){
+          loadMaintenanceHistory();
+          renderMaintenanceHistory();
+          if($('#page-manutencao')?.classList.contains('active'))toast('Histórico de manutenção atualizado em outro dispositivo');
+        }
+        window.dispatchEvent(new CustomEvent('xcmg-cloud-update',{detail:{key,value:row.value,eventType:payload.eventType}}));
+      })
+      .subscribe(status=>{if(status==='CHANNEL_ERROR')console.warn('Realtime indisponível; a sincronização ocorrerá ao recarregar.')});
+  }
   async function init(){
     window.addEventListener('beforeunload',event=>{flushAutoTurnSave();if(hasPendingEquipmentChanges()){event.preventDefault();event.returnValue='';}});
     window.addEventListener('online',()=>setTimeout(flushOfflineQueue,700));
@@ -1375,6 +1401,7 @@
     // Envia pendências locais antes de puxar o remoto, para não perder alterações offline.
     await flushOfflineQueue();
     await hydrateRemoteCache();
+    window.XCMGInitialStatus?.reloadFromStorage?.();
     try{statusConfigs=normalizeStatusConfigs(JSON.parse(localStorage.getItem(STATUS_CONFIG_KEY)))}catch{statusConfigs=normalizeStatusConfigs(DEFAULT_STATUS_CONFIGS)}
     setupSelects();
     loadMaintenanceHistory();
@@ -1382,6 +1409,7 @@
     await loadAuth();
     if(currentUser)startSession();
     else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}
+    setupRealtimeSync();
     // Registro do Service Worker fica centralizado em js/pwa.js.
     setTimeout(flushOfflineQueue,1200);
   }

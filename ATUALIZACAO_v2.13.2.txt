@@ -1,0 +1,8 @@
+XCMG REPORT — ATUALIZAÇÃO v2.13.2
+
+CORREÇÃO PARA CELULAR
+- Impede o zoom automático ao tocar em campos de texto, seleção e observação.
+- Define viewport com escala fixa e compatibilidade com áreas seguras do aparelho.
+- Garante tamanho computado mínimo de 16 px nos campos em telas touch, evitando o comportamento automático do Safari/iPhone.
+- Mantém os recursos de sincronização do Status do Efetivo e Histórico de Manutenção da v2.13.1.
+- Atualiza o cache da PWA para forçar o carregamento dos arquivos corrigidos.

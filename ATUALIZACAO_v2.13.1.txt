@@ -1,0 +1,11 @@
+XCMG REPORT v2.13.1 — SINCRONIZAÇÃO COMPLETA
+
+Atualizações:
+- Status do Efetivo sincronizado pelo Supabase entre dispositivos.
+- Categorias, equipamentos, operadores, sinaleiros, locais, observações, substituições e controle de conferência sincronizados.
+- Legenda/configuração do Status do Efetivo sincronizada.
+- Histórico de Manutenção carregado do Supabase e atualizado em tempo real.
+- Fila offline preservada: alterações são enviadas quando a conexão retornar.
+- Cache PWA atualizado para v2.13.1.
+
+Não é necessário executar novo SQL: utiliza a tabela app_storage existente.
