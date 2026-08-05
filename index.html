@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=2.12.47">
+  <link rel="stylesheet" href="css/style.css?v=2.12.76">
 </head>
 <body>
   <section class="pwa-install-banner hidden" id="pwaInstallBanner" aria-live="polite">
@@ -59,12 +59,12 @@
       <nav id="nav">
         <button class="nav-item active" data-page="dashboard">▦ <span>Dashboard</span></button>
         <button class="nav-item" data-page="equipamentos">▤ <span>Equipamentos</span></button>
-        <button class="nav-item" data-page="status-inicial">📋 <span>Status do Efetivo</span></button>
         <button class="nav-item" data-page="relatorios">▧ <span>Relatórios</span></button>
-        <button class="nav-item" data-page="historico">◷ <span>Histórico</span></button>
         <button class="nav-item" data-page="manutencao">🔧 <span>Histórico Manutenção</span></button>
+        <button class="nav-item" data-page="status-inicial">📋 <span>Status do Efetivo</span></button>
         <button class="nav-item" data-page="recados">📬 <span>Central de Recados</span><span class="nav-count hidden" id="messageNavCount">0</span></button>
         <button class="nav-item admin-only" data-page="usuarios">♙ <span>Usuários</span></button>
+        <button class="nav-item" data-page="historico">◷ <span>Histórico</span></button>
         <button class="nav-item" data-page="configuracoes">⚙ <span>Configurações</span></button>
       </nav>
     </aside>
@@ -78,12 +78,8 @@
 
       <section class="page active" id="page-dashboard">
         <div class="stats" id="stats"></div>
-        <article class="panel maintenance-panel"><div class="panel-head"><div><span class="eyebrow">MANUTENÇÃO DA FROTA</span><h2>Preventivas, corretivas e equipamentos substituídos</h2></div><span class="panel-note">O equipamento substituído entra na manutenção. O substituto mantém seu status operacional.</span></div><div id="maintenanceList" class="maintenance-list"></div></article>
-        <article class="panel seal-panel"><div class="panel-head"><div><span class="eyebrow">CONTROLE VALE</span><h2>Renovação do selo</h2></div><span class="panel-note">Painel exclusivo, separado dos indicadores de manutenção.</span></div><div id="sealRenewalList" class="seal-list"></div></article>
-        <div class="grid-2">
-          <article class="panel"><div class="panel-head"><div><span class="eyebrow">INDICADORES OPERACIONAIS</span><h2>Status da frota</h2></div></div><div id="statusBars" class="bars"></div></article>
-          <article class="panel"><div class="panel-head"><div><span class="eyebrow">MONITORAMENTO</span><h2>Alertas operacionais</h2></div></div><div id="alerts"></div></article>
-        </div>
+        <article class="panel maintenance-panel"><div class="panel-head"><div><span class="eyebrow">MANUTENÇÃO</span><h2>Preventivas, Corretivas, Atualizações de Selo e Substituições</h2></div><span class="panel-note">Ocorrências de manutenção e substituições são registradas no histórico. Os equipamentos substitutos permanecem com seu status operacional.</span></div><div id="maintenanceList" class="maintenance-list"></div></article>
+        <article class="panel fleet-status-panel"><div class="panel-head"><div><span class="eyebrow">INDICADORES OPERACIONAIS</span><h2>Status da frota</h2></div></div><div id="statusBars" class="bars fleet-status-bars"></div></article>
         <article class="panel"><div class="panel-head"><div><span class="eyebrow">RASTREABILIDADE</span><h2>Atualizações recentes</h2></div><button class="link-btn" data-go="historico">Ver histórico</button></div><div id="recentUpdates"></div></article>
       </section>
 
@@ -124,11 +120,13 @@
           <select id="initialFilterStatus" aria-label="Filtrar por status">
             <option value="">Todos os status</option>
             <option value="green">Com operador</option>
-            <option value="yellow">Sem operador</option>
-            <option value="red">Em manutenção</option>
+            <option value="orange">Sem operador / sinaleiro</option>
+            <option value="yellow">Atualização de Selo (Vale)</option>
+            <option value="red">Manutenção corretiva/preventiva</option>
             <option value="checked">Conferido</option>
             <option value="pending">Pendente</option>
           </select>
+          <button class="btn" id="initialEditLegendBtn" type="button">⚙️ Editar legenda</button>
           <button class="btn primary" id="initialNewEquipmentBtn" type="button">＋ Novo equipamento</button>
           <button class="btn hidden" id="initialClearFiltersBtn" type="button">Limpar filtros</button>
         </div>
@@ -235,11 +233,40 @@
             <button type="submit" class="btn primary">Alterar senha</button>
           </form></article>
           <article class="panel"><div class="panel-head"><h2>Dados</h2></div><p class="muted">Exporte uma cópia de segurança ou importe os dados em outro aparelho.</p><div class="actions vertical"><button class="btn" id="exportBtn">Exportar backup</button><label class="btn file-btn">Importar backup<input type="file" id="importInput" accept="application/json"></label><button class="btn danger" id="resetBtn">Restaurar dados iniciais</button></div></article>
+          <article class="panel admin-only status-settings-panel" id="equipmentStatusSettingsPanel">
+            <div class="panel-head"><div><h2>Status do Equipamento</h2><p class="muted">Cadastre, renomeie e vincule cada status ao farol e ao fluxo operacional ou interno.</p></div></div>
+            <div class="status-config-list" id="equipmentStatusList"></div>
+            <form id="statusConfigForm" class="status-config-form">
+              <input type="hidden" id="statusConfigId">
+              <h3 id="statusConfigFormTitle">Novo status</h3>
+              <div class="form-grid">
+                <label class="full">Nome do status*<input id="statusConfigName" required placeholder="Ex.: Atualização de CRM"></label>
+                <label>Farol*<select id="statusConfigSignal"><option value="green">🟢 Disponível</option><option value="blue">🔵 Em atendimento</option><option value="yellow">🟡 Atenção</option><option value="red">🔴 Indisponível</option></select></label>
+                <label>Tipo*<select id="statusConfigType"><option value="operational">Operacional</option><option value="internal">Interno</option></select></label>
+                <label>Ordem<input type="number" min="1" id="statusConfigOrder" value="1"></label>
+                <label class="status-active-check"><input type="checkbox" id="statusConfigActive" checked> Status ativo</label>
+              </div>
+              <div class="actions end"><button type="button" class="btn hidden" id="cancelStatusConfigEdit">Cancelar edição</button><button type="submit" class="btn primary">Salvar status</button></div>
+            </form>
+          </article>
         </div>
       </section>
     </main>
   </div>
 
+
+
+  <div class="modal-backdrop hidden" id="initialStatusConfigBackdrop">
+    <div class="modal initial-status-config-modal">
+      <div class="modal-head"><h2>Legenda do Status do Efetivo</h2><button class="icon-btn" id="closeInitialStatusConfigBtn" type="button">×</button></div>
+      <form id="initialStatusConfigForm">
+        <p class="muted">Configuração independente e exclusiva deste módulo. As alterações não afetam o Relatório Operacional nem a Manutenção.</p>
+        <div class="initial-status-config-head"><span>Cor</span><span>Ícone</span><span>Descrição</span></div>
+        <div id="initialStatusConfigRows"></div>
+        <div class="actions initial-status-config-actions"><button type="button" class="btn" id="resetInitialStatusConfigBtn">Restaurar padrão</button><span></span><button type="button" class="btn" id="cancelInitialStatusConfigBtn">Cancelar</button><button type="submit" class="btn primary">Salvar legenda</button></div>
+      </form>
+    </div>
+  </div>
 
   <div class="modal-backdrop hidden" id="initialEquipmentModalBackdrop">
     <div class="modal initial-equipment-modal">
@@ -266,11 +293,12 @@
           <label>Prefixo*<input id="eqPrefix" list="prefixOptions" required placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="prefixOptions"></datalist></label>
           <label>Categoria*<select id="eqCategory" required></select></label>
           <input type="hidden" id="eqCapacity">
-          <label>Status operacional*<select id="eqStatus" required></select></label>
+          <label>Farol*<div class="equipment-signal-control modal-signal-control" data-signal="green"><span class="equipment-signal-indicator" aria-hidden="true"></span><select id="eqSignal" class="equipment-signal-select" required aria-label="Farol do equipamento"></select></div></label>
+          <label>Status do equipamento*<select id="eqStatus" required></select></label>
           <label id="clientField">Cliente<input id="eqClient" list="clientOptions" placeholder="Pool, Vulca, CMD..."></label>
           <label>Localização*<input id="eqLocation" list="locationOptions" required placeholder="Pátio XCMG"></label>
           <label id="loadStatusField">Status do Munck<select id="eqLoadStatus"><option value="">Selecione...</option><option>Carregado</option><option>Vazio</option></select></label>
-          <label>Substitui equipamento<input id="eqSubstitute" list="substituteOptions" placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="substituteOptions"></datalist></label>
+          <label id="substituteField">Substitui equipamento<input id="eqSubstitute" list="substituteOptions" placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="substituteOptions"></datalist></label>
           <label>Combustível (%)<input type="number" min="0" max="100" id="eqFuel" value="100"></label>
           <label class="full">Condição / posicionamento<input id="eqCondition" placeholder="com gaiola, patolado, carregado com contrapeso..."></label>
           <label class="full">Observação<textarea id="eqNotes" rows="3"></textarea></label>
@@ -355,9 +383,9 @@
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/offline-sync.js?v=2.12.42"></script>
-  <script src="js/status-inicial.js?v=2.12.47"></script>
-  <script src="js/app.js?v=2.12.47"></script>
-  <script src="js/pwa.js?v=2.12.47" defer></script>
+  <script src="js/status-inicial.js?v=2.12.76"></script>
+  <script src="js/app.js?v=2.12.76"></script>
+  <script src="js/pwa.js?v=2.12.76" defer></script>
 
   <script>
     // v2.12.47: mantém o cabeçalho da tabela visível e ajusta a área útil à tela.

@@ -49,5 +49,5 @@ A URL e a chave pública do Supabase estão em `js/app.js`. A chave `publishable
 - Para validar a PWA e a sincronização completa, teste pela URL da Vercel ou por um servidor local, nunca apenas clicando duas vezes no `index.html`.
 
 
-## v2.12.47
+## v2.12.52
 Cabeçalho da tabela do Status do Efetivo congelado, com rolagem apenas das linhas e altura automática conforme a tela.

@@ -1,0 +1,7 @@
+XCMG REPORT — ATUALIZAÇÃO v2.12.65
+
+- Corrigida a exibição de substituição no Relatório Operacional.
+- A substituição agora aparece na mesma linha do equipamento: 1JA221 (Sub. 1JA365 (250T)).
+- Removida a linha separada “↳ Substituído por”.
+- Quando houver substituição, a capacidade exibida será a do equipamento substituído, conforme o cadastro.
+- Demais relatórios e funcionalidades permanecem inalterados.

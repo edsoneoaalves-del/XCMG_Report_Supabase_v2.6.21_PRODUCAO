@@ -1,0 +1,8 @@
+XCMG REPORT v2.12.52
+
+- Campo renomeado para Status do equipamento.
+- Status operacionais simplificados para: Em atendimento e Atendeu.
+- Status internos: Preventiva, Corretiva e Renovação do selo (Vale).
+- Todo status interno abre automaticamente a seção Informação Interna.
+- Renovação do selo passa a exigir local e motivo internos e entra no Histórico de Manutenção.
+- Registros antigos como Disponível são convertidos para Atendeu.

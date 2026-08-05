@@ -1,0 +1,9 @@
+XCMG REPORT v2.12.76
+
+- Removido o painel Controle Vale / Atualização de Selo do Dashboard.
+- Removido o painel Monitoramento / Alertas Operacionais.
+- Painel Status da Frota ampliado para toda a largura.
+- Mantidas somente as linhas: Disponível, Em Atendimento e Manutenção.
+- Manutenção reúne Preventivas, Corretivas, Selos e Substituições.
+- Nenhuma alteração nos demais módulos e regras do projeto.
+- Cache PWA atualizado para v2.12.76.

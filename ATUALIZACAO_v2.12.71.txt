@@ -1,0 +1,8 @@
+XCMG REPORT — v2.12.71
+
+DASHBOARD — CORREÇÃO DO CARD MANUTENÇÃO
+
+- Corrigido o título do card superior de “Informações internas” para “Manutenção”.
+- Mantida a descrição: Preventivas • Corretivas • Selos • Substituições.
+- Mantido o painel central com o título MANUTENÇÃO.
+- Atualizada a versão do cache/PWA para forçar o carregamento da correção.

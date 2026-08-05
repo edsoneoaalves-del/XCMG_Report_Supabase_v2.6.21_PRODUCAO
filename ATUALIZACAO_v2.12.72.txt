@@ -1,0 +1,11 @@
+XCMG REPORT v2.12.72
+
+CORREÇÃO – PERSISTÊNCIA DOS USUÁRIOS
+
+- Cadastro, edição, exclusão e alteração de senha agora aguardam a confirmação real do Supabase.
+- O sistema não informa mais sucesso quando o usuário estiver salvo somente no navegador.
+- Alterações não confirmadas ficam na fila de sincronização e recebem aviso claro.
+- O botão de cadastro fica bloqueado durante o salvamento para evitar duplicidade.
+- A lista enviada ao banco não inclui sessão do usuário conectado.
+- O logout não sobrescreve mais a lista remota de usuários.
+- Cache do PWA atualizado para a versão 2.12.72.

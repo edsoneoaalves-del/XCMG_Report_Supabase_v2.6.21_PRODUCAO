@@ -5,6 +5,7 @@
   const AUTH_BACKUP_KEY='xcmg_report_auth_backup_v1';
   const TURN_KEY='xcmg_report_last_turn_v1';
   const MAINT_HISTORY_KEY='xcmg_report_maintenance_history_v1';
+  const STATUS_CONFIG_KEY='xcmg_report_equipment_statuses_v1';
   const USER_KEY=id=>`xcmg_report_user_${id}`;
   const SUPABASE_URL='https://dqslcjxetirfhcftaqjz.supabase.co';
   const SUPABASE_KEY='sb_publishable_hRARb5cN-tFqp0uJDpXFCA_ASKtJopY';
@@ -88,7 +89,7 @@
   }
   async function hydrateRemoteCache(){
     const pendingKeys=new Set(await window.XCMGOfflineSync?.pendingKeys?.()||[]);
-    const keys=[AUTH_KEY,TURN_KEY,MAINT_HISTORY_KEY];
+    const keys=[AUTH_KEY,TURN_KEY,MAINT_HISTORY_KEY,STATUS_CONFIG_KEY];
     for(const key of keys){
       if(pendingKeys.has(key))continue;
       const value=await remoteGet(key);
@@ -115,7 +116,39 @@
     'GUINDAUTO SKY MUNCK',
     'STATUS EMPILHADEIRAS'
   ];
-  const STATUSES=['Disponível','Em atendimento','Preventiva','Corretiva','Renovação do selo (Vale)'];
+  const SIGNALS=['green','blue','yellow','red'];
+  const signalEmoji={green:'🟢',blue:'🔵',yellow:'🟡',red:'🔴'};
+  const signalLabel={green:'Disponível',blue:'Em atendimento',yellow:'Atenção',red:'Indisponível'};
+  const signalColor={green:'#34d399',blue:'#1d8cff',yellow:'#f4c430',red:'#ff5d6c'};
+  const DEFAULT_STATUS_CONFIGS=[
+    {id:'available',name:'Disponível',signal:'green',type:'operational',active:true,order:1,aliases:[]},
+    {id:'in_service',name:'Em atendimento',signal:'blue',type:'operational',active:true,order:2,aliases:['Atendeu']},
+    {id:'seal_update',name:'Atualização de Selo (Vale)',signal:'yellow',type:'internal',active:true,order:3,aliases:['Renovação do selo (Vale)']},
+    {id:'preventive',name:'Preventiva',signal:'red',type:'internal',active:true,order:4,aliases:[]},
+    {id:'corrective',name:'Corretiva',signal:'red',type:'internal',active:true,order:5,aliases:[]}
+  ];
+  function normalizeStatusConfigs(value){
+    const source=Array.isArray(value)&&value.length?value:DEFAULT_STATUS_CONFIGS;
+    // v2.12.67: remove a opção separada "Atendeu" do painel. Registros e
+    // configurações antigas continuam compatíveis por meio do alias do azul.
+    const list=source.filter(x=>x?.id!=='served'&&String(x?.name||'').trim()!=='Atendeu');
+    const normalized=list.map((x,i)=>({id:x.id||newId(),name:String(x.name||'').trim()||`Status ${i+1}`,signal:SIGNALS.includes(x.signal)?x.signal:'green',type:x.type==='internal'?'internal':'operational',active:x.active!==false,order:Number(x.order)||i+1,aliases:Array.isArray(x.aliases)?x.aliases:[]}));
+    const inService=normalized.find(x=>x.id==='in_service'||x.name==='Em atendimento');
+    if(inService&&!inService.aliases.includes('Atendeu'))inService.aliases.push('Atendeu');
+    return normalized.sort((a,b)=>a.order-b.order||a.name.localeCompare(b.name,'pt-BR'));
+  }
+  let statusConfigs=(()=>{try{return normalizeStatusConfigs(JSON.parse(localStorage.getItem(STATUS_CONFIG_KEY)))}catch{return normalizeStatusConfigs(DEFAULT_STATUS_CONFIGS)}})();
+  const activeStatusConfigs=()=>statusConfigs.filter(x=>x.active).sort((a,b)=>a.order-b.order||a.name.localeCompare(b.name,'pt-BR'));
+  const getStatusConfig=status=>statusConfigs.find(x=>x.name===status||(x.aliases||[]).includes(status));
+  const currentStatusName=status=>getStatusConfig(status)?.name||status||activeStatusConfigs()[0]?.name||'Disponível';
+  const isInternalStatus=status=>getStatusConfig(status)?.type==='internal';
+  const defaultSignalForStatus=status=>getStatusConfig(status)?.signal||'green';
+  const normalizeSignal=(signal,status)=>SIGNALS.includes(signal)?signal:defaultSignalForStatus(status);
+  function saveStatusConfigs(){
+    statusConfigs=normalizeStatusConfigs(statusConfigs);
+    localStorage.setItem(STATUS_CONFIG_KEY,JSON.stringify(statusConfigs));
+    remoteSet(STATUS_CONFIG_KEY,statusConfigs);
+  }
   function capacityNumber(value=''){
     const match=String(value).replace(',','.').match(/\d+(?:\.\d+)?/);
     return match?Number(match[0]):Number.POSITIVE_INFINITY;
@@ -172,18 +205,20 @@
     '1JA406':'POOL'
   };
   const statusColor={
-    'Disponível':'#16a34a',
+    'Disponível':'#34d399',
     'Em atendimento':'#1d8cff',
+    'Atendeu':'#1d8cff',
     'Preventiva':'#ff5d6c',
     'Corretiva':'#ff5d6c',
-    'Renovação do selo (Vale)':'#f4c430'
+    'Atualização de Selo (Vale)':'#f4c430'
   };
   const statusEmoji={
     'Disponível':'🟢',
     'Em atendimento':'🔵',
+    'Atendeu':'🔵',
     'Preventiva':'🔴',
     'Corretiva':'🔴',
-    'Renovação do selo (Vale)':'🟡'
+    'Atualização de Selo (Vale)':'🟡'
   };
   const legacyCategory={
     Guindaste:'Status dos Guindastes - Turno',
@@ -195,10 +230,12 @@
     Outro:'GUINDAUTO SKY MUNCK'
   };
   const legacyStatus={
-    'Aguardando frente de serviço':'Disponível',
-    Operacional:'Disponível',
+    'Aguardando frente de serviço':'Atendeu',
+    Operacional:'Atendeu',
     Patolado:'Em atendimento',
-    Estacionado:'Disponível',
+    Estacionado:'Atendeu',
+    'Disponível':'Disponível',
+    'Renovação do selo (Vale)':'Atualização de Selo (Vale)',
     Indisponível:'Corretiva',
     Manutenção:'Corretiva',
     Manutencao:'Corretiva'
@@ -318,12 +355,38 @@
     if(auth.users.length)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
     currentUser=null;
   }
-  function saveAuth(){
-    localStorage.setItem(AUTH_KEY,JSON.stringify(auth));
-    if(Array.isArray(auth.users)&&auth.users.length){
-      localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
-      remoteSet(AUTH_KEY,auth);
+  function authPersistentPayload(){
+    return {...auth,currentUserId:null};
+  }
+  async function saveAuth({requireRemote=false}={}){
+    const payload=authPersistentPayload();
+    localStorage.setItem(AUTH_KEY,JSON.stringify(payload));
+    if(!Array.isArray(payload.users)||!payload.users.length)return false;
+    localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify(payload));
+
+    // Alterações de usuários precisam de confirmação real do Supabase.
+    // Assim, a interface não informa sucesso enquanto o cadastro existir
+    // somente neste navegador.
+    if(requireRemote){
+      if(!connectionIsOnline()||!supabaseClient){
+        await window.XCMGOfflineSync?.enqueueSet(AUTH_KEY,payload);
+        return false;
+      }
+      try{
+        await directRemoteSet(AUTH_KEY,payload);
+        await window.XCMGOfflineSync?.clearKey(AUTH_KEY);
+        syncWarningShown=false;
+        window.XCMGOfflineSync?.emit();
+        return true;
+      }catch(error){
+        if(navigator.onLine===false)await window.XCMGOfflineSync?.markOffline?.();
+        else await window.XCMGOfflineSync?.markSyncError?.();
+        await window.XCMGOfflineSync?.enqueueSet(AUTH_KEY,payload);
+        showSyncWarning(error);
+        return false;
+      }
     }
+    return await remoteSet(AUTH_KEY,payload);
   }
   async function ensureAuthFromRemote(){
     if(!connectionIsOnline())return false;
@@ -346,7 +409,8 @@
       ...x,
       id:x.id||newId(),
       category:legacyCategory[x.category]||x.category||CATEGORIES[0],
-      status:legacyStatus[x.status]||x.status||STATUSES[0],
+      status:currentStatusName(legacyStatus[x.status]||x.status),
+      signal:normalizeSignal(x.signal,currentStatusName(legacyStatus[x.status]||x.status)),
       client:String(x.client||'').trim()||DEFAULT_CLIENTS[String(x.prefix||'').trim().toUpperCase()]||'',
       loadStatus:x.loadStatus||'',
       substitute:x.substitute||'',
@@ -410,10 +474,12 @@
   function log(action,detail){state.history.unshift({id:newId(),action,detail,date:new Date().toISOString()});state.history=state.history.slice(0,500)}
   function applyTheme(){document.documentElement.classList.toggle('light',state.settings.theme==='light')}
   function setupSelects(){
+    const statuses=activeStatusConfigs();
     $('#filterCategory').innerHTML='<option value="">Todas as categorias</option>'+CATEGORIES.map(x=>`<option>${x}</option>`).join('');
     $('#eqCategory').innerHTML=CATEGORIES.map(x=>`<option>${x}</option>`).join('');
-    $('#filterStatus').innerHTML='<option value="">Todos os status</option>'+STATUSES.map(x=>`<option>${x}</option>`).join('');
-    $('#eqStatus').innerHTML=STATUSES.map(x=>`<option>${x}</option>`).join('');
+    $('#filterStatus').innerHTML='<option value="">Todos os status</option>'+statuses.map(x=>`<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('');
+    $('#eqStatus').innerHTML=statuses.map(x=>`<option value="${esc(x.name)}">${signalEmoji[x.signal]} ${esc(x.name)}</option>`).join('');
+    $('#eqSignal').innerHTML=SIGNALS.map(v=>`<option value="${v}">${signalEmoji[v]} ${signalLabel[v]}</option>`).join('');
     renderPrefixOptions();
   }
   function equipmentLabel(prefix='',capacity=''){
@@ -544,26 +610,18 @@
     box.innerHTML=list.map(m=>{const unread=messageTab==='inbox'&&!isMessageRead(m);const canDelete=currentUser.role==='admin'||m.sender_id===currentUser.id;return `<article class="message-card ${unread?'unread':''} priority-${esc(m.priority)}" data-message-card="${m.id}"><div class="message-card-head"><div><span class="message-priority">${messagePriorityLabel(m.priority)}</span><h3>${esc(m.subject)}</h3></div><div class="message-meta"><span>${fmtDate(m.created_at)}</span>${unread?'<strong>Novo</strong>':'<span>Lido</span>'}</div></div><div class="message-route"><span>De: <strong>${esc(m.sender_name)}</strong> — ${esc(m.sender_team||'')}</span><span>Para: <strong>${m.recipient_type==='all'?'Todos':esc(m.recipient_name||'')}</strong></span></div>${m.equipment?`<div class="message-equipment">🚜 ${esc(m.equipment)}</div>`:''}<p class="message-body">${esc(m.body).replace(/\n/g,'<br>')}</p><div class="message-actions">${unread?`<button class="btn small primary" data-read-message="${m.id}">Marcar como lido</button>`:''}<button class="btn small" data-copy-message="${m.id}">Copiar</button><button class="btn small" data-share-message="${m.id}">Compartilhar</button>${canDelete?`<button class="btn small danger" data-delete-message="${m.id}">Excluir</button>`:''}${m._pendingCreate||m._pendingRead||m._pendingDelete?'<span class="message-sync">Aguardando sincronização</span>':''}</div></article>`}).join('');
   }
   function getMaintenanceItems(){
-    // Manutenção = preventiva + corretiva + equipamentos substituídos.
-    // Cada prefixo é contado uma única vez. Renovação do selo tem prioridade
-    // e fica sempre fora da manutenção.
+    // Manutenção = preventiva + corretiva + atualização de selo + substituições.
+    // Cada prefixo é contado uma única vez.
     const items=new Map();
-    const sealPrefixes=new Set(
-      state.equipments
-        .filter(x=>x.status==='Renovação do selo (Vale)')
-        .map(x=>String(x.prefix||'').trim().toUpperCase())
-        .filter(Boolean)
-    );
-    state.equipments.filter(x=>['Preventiva','Corretiva'].includes(x.status)).forEach(x=>{
+    state.equipments.filter(x=>isInternalStatus(x.status)).forEach(x=>{
       const key=String(x.prefix||'').trim().toUpperCase();
-      if(!key||sealPrefixes.has(key))return;
+      if(!key)return;
       items.set(key,{prefix:key,capacity:x.capacity||'',status:x.status,location:x.location||'',maintenanceLocation:x.maintenanceLocation||'',maintenanceReason:x.maintenanceReason||'',replacedBy:[]});
     });
     state.equipments.forEach(x=>{
       const sub=parseEquipmentLabel(x.substitute);
       if(!sub.prefix)return;
       const key=sub.prefix.trim().toUpperCase();
-      if(sealPrefixes.has(key))return;
       const substitutedEquipment=state.equipments.find(e=>String(e.prefix||'').trim().toUpperCase()===key);
       const current=items.get(key)||{prefix:key,capacity:sub.capacity||'',status:'Substituído',location:'',maintenanceLocation:'',maintenanceReason:'',replacedBy:[]};
       current.capacity=current.capacity||sub.capacity||substitutedEquipment?.capacity||'';
@@ -593,7 +651,7 @@
   }
   function getSealRenewalItems(){
     const items=new Map();
-    state.equipments.filter(x=>x.status==='Renovação do selo (Vale)').forEach(x=>{
+    state.equipments.filter(x=>getStatusConfig(x.status)?.id==='seal_update').forEach(x=>{
       const key=String(x.prefix||'').trim().toUpperCase();
       if(!key)return;
       items.set(key,{prefix:key,capacity:x.capacity||'',location:x.location||'',notes:x.notes||''});
@@ -604,44 +662,43 @@
     const e=state.equipments;
     const prefixOf=x=>String(x?.prefix||'').trim().toUpperCase();
     const maintenanceItems=getMaintenanceItems();
-    const maintenancePrefixes=new Set(maintenanceItems.map(x=>x.prefix));
     const sealItems=getSealRenewalItems();
-    const sealPrefixes=new Set(sealItems.map(x=>x.prefix));
 
-    // Universo da frota: todos os equipamentos cadastrados + todos os prefixos
-    // informados como equipamentos substituídos. O Set elimina duplicidades.
-    const fleetPrefixes=new Set();
+    // v2.12.69: todos os indicadores principais usam o mesmo universo:
+    // prefixos únicos efetivamente cadastrados no painel de equipamentos.
+    // Equipamentos citados apenas como substituídos continuam nas Informações
+    // Manutenção, mas não aumentam artificialmente a Frota Ativa.
+    const registeredPrefixes=new Set(e.map(prefixOf).filter(Boolean));
+    const statusByPrefix=new Map();
+    const statusPriority={corrective:5,preventive:4,seal_update:3,in_service:2,available:1};
     e.forEach(x=>{
-      const own=prefixOf(x);
-      if(own)fleetPrefixes.add(own);
-      const replaced=parseEquipmentLabel(x.substitute).prefix;
-      if(replaced)fleetPrefixes.add(replaced.trim().toUpperCase());
+      const key=prefixOf(x);if(!key)return;
+      const cfg=getStatusConfig(x.status)||getStatusConfig(currentStatusName(x.status));
+      const id=cfg?.id||'available';
+      const previous=statusByPrefix.get(key);
+      if(!previous||(statusPriority[id]||0)>(statusPriority[previous]||0))statusByPrefix.set(key,id);
     });
+    // Todo equipamento sem status válido é tratado como Disponível, mantendo
+    // a soma dos status igual à Frota Ativa.
+    registeredPrefixes.forEach(key=>{if(!statusByPrefix.has(key))statusByPrefix.set(key,'available')});
+    const countStatus=id=>[...statusByPrefix.values()].filter(value=>value===id).length;
 
-    // Os indicadores são mutuamente exclusivos por prefixo:
-    // selo > manutenção > atendimento > disponível.
-    const availablePrefixes=new Set();
-    const servicePrefixes=new Set();
-    e.forEach(x=>{
-      const key=prefixOf(x);
-      if(!key||sealPrefixes.has(key)||maintenancePrefixes.has(key))return;
-      if(x.status==='Em atendimento')servicePrefixes.add(key);
-      else if(x.status==='Disponível')availablePrefixes.add(key);
-    });
-
-    const total=fleetPrefixes.size;
-    const maint=maintenancePrefixes.size;
-    const sealCount=sealPrefixes.size;
-    const lowPrefixes=new Set(
-      e.filter(x=>Number(x.fuel)<=state.settings.fuelLimit).map(prefixOf).filter(Boolean)
-    );
+    const total=registeredPrefixes.size;
+    const availableCount=countStatus('available');
+    const serviceCount=countStatus('in_service');
+    const sealCount=countStatus('seal_update');
+    const preventiveCount=countStatus('preventive');
+    const correctiveCount=countStatus('corrective');
+    const maint=maintenanceItems.length;
+    const lowPrefixes=new Set(e.filter(x=>Number(x.fuel)<=state.settings.fuelLimit).map(prefixOf).filter(Boolean));
     const low=lowPrefixes.size;
+
     const cards=[
       ['Frota ativa',total,'Equipamentos cadastrados','#0891b2'],
-      ['Disponíveis',availablePrefixes.size,'Prontos para operação','#16a34a'],
-      ['Em atendimento',servicePrefixes.size,'Em operação','#2563eb'],
-      ['Em manutenção',maint,'Preventiva • Corretiva • Substituídos','#dc2626'],
-      ['Renovação do selo',sealCount,'Processo Vale','#ca8a04'],
+      ['Disponível',availableCount,'Equipamentos disponíveis','#10b981'],
+      ['Em atendimento',serviceCount,'Equipamentos em atendimento','#2563eb'],
+      ['Manutenção',maint,'Preventivas • Corretivas • Selos • Substituições','#dc2626'],
+      ['Atualização de Selo',sealCount,'Processo Vale','#ca8a04'],
       [`Combustível ≤ ${state.settings.fuelLimit}%`,low,'Equipamentos em alerta','#d97706']
     ];
     $('#stats').innerHTML=cards.map(c=>`<div class="stat" style="--accent:${c[3]}"><div class="stat-accent"></div><div class="label">${c[0]}</div><div class="value">${c[1]}</div><div class="hint">${c[2]}</div></div>`).join('');
@@ -654,12 +711,20 @@
         : esc(displayedLocation);
       return `<div class="maintenance-item"><div class="maintenance-main"><strong>${esc(equipmentLabel(x.prefix,x.capacity))}</strong><span>${esc(statusLabel)}</span></div><small>${detail}</small></div>`;
     }).join('')||'<div class="empty dashboard-empty compact"><span class="empty-icon">✓</span><strong>Nenhum equipamento em manutenção</strong><small>Não há preventiva, corretiva ou equipamento substituído.</small></div>';
-    $('#sealRenewalList').innerHTML=sealItems.map(x=>`<div class="seal-item"><div><strong>${esc(equipmentLabel(x.prefix,x.capacity))}</strong><span>Renovação do selo (Vale)</span></div><small>${esc(x.location||'Sem localização informada')}${x.notes?` — ${esc(x.notes)}`:''}</small></div>`).join('')||'<div class="empty dashboard-empty compact"><span class="empty-icon">✓</span><strong>Nenhum selo em renovação</strong><small>Não há equipamentos neste processo.</small></div>';
-    $('#statusBars').innerHTML=STATUSES.map(s=>{const n=new Set(e.filter(x=>x.status===s).map(prefixOf).filter(Boolean)).size,p=total?Math.round(n/total*100):0;return `<div class="bar-row"><span>${s}</span><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${statusColor[s]}"></div></div><b>${n}</b></div>`}).join('');
-    const alerts=[];
-    e.filter(x=>Number(x.fuel)<=state.settings.fuelLimit).forEach(x=>alerts.push(`<div class="alert"><strong>${esc(x.prefix)} com ${x.fuel}% de combustível</strong><small>${esc(x.location)} — nível abaixo do limite operacional</small></div>`));
-    e.filter(x=>x.status==='Corretiva').forEach(x=>alerts.push(`<div class="alert"><strong>${esc(x.prefix)} — manutenção corretiva</strong><small>${esc(x.location)} ${x.notes?'— '+esc(x.notes):''}</small></div>`));
-    $('#alerts').innerHTML=alerts.join('')||'<div class="empty dashboard-empty"><span class="empty-icon">✓</span><strong>Nenhum alerta operacional</strong><small>Todos os indicadores estão dentro dos parâmetros definidos.</small></div>';
+
+    const fleetRows=[
+      {key:'available',label:'DISPONÍVEL',detail:'',count:availableCount,color:'#10b981',icon:'✓'},
+      {key:'in_service',label:'EM ATENDIMENTO',detail:'',count:serviceCount,color:'#1d8cff',icon:'🔧'},
+      {key:'maintenance',label:'MANUTENÇÃO',detail:'Preventivas • Corretivas • Selos • Substituições',count:maint,color:'#ff3b55',icon:'⚙'}
+    ];
+    $('#statusBars').innerHTML=fleetRows.map(row=>{
+      const p=total?Math.round(row.count/total*100):0;
+      return `<div class="fleet-bar-row">
+        <div class="fleet-bar-label"><span class="fleet-bar-icon" style="--row-color:${row.color}">${row.icon}</span><span><strong>${row.label}</strong>${row.detail?`<small>${row.detail}</small>`:''}</span></div>
+        <div class="fleet-bar-track"><div class="fleet-bar-fill" style="width:${Math.min(p,100)}%;background:${row.color}">${p>8?`<span>${p}%</span>`:''}</div>${p<=8?`<span class="fleet-bar-percent">${p}%</span>`:''}</div>
+        <b class="fleet-bar-count">${row.count} equipamento${row.count===1?'':'s'}</b>
+      </div>`;
+    }).join('');
     $('#recentUpdates').innerHTML=state.history.slice(0,5).map(h=>`<div class="recent"><strong>${esc(h.action)}</strong><small>${esc(h.detail)} • ${fmtDate(h.date)}</small></div>`).join('')||'<div class="empty">Nenhuma alteração registrada.</div>';
   }
   function pendingEquipmentCount(){return state.equipments.filter(x=>x.updateControl==='pending').length;}
@@ -683,18 +748,21 @@
     const list=state.equipments
       .filter(x=>(!q||[x.prefix,x.category,x.location,x.capacity,x.client,x.condition,x.notes,x.substitute].join(' ').toLowerCase().includes(q))&&(!cat||x.category===cat)&&(!st||x.status===st))
       .sort(compareEquipments);
-    const statusGroup=x=>['Preventiva','Corretiva'].includes(x.status)?'maintenance':x.status;
-    const statusButtons=x=>{
-      const current=statusGroup(x);
-      const buttons=[
-        ['Disponível','🟢','Disponível'],
-        ['Em atendimento','🔵','Em atendimento'],
-        ['maintenance','🔴',x.status==='Corretiva'?'Corretiva':'Manutenção'],
-        ['Renovação do selo (Vale)','🟡','Renovação do selo']
-      ];
-      return `<div class="status-buttons" data-field="status" data-id="${x.id}" data-value="${esc(x.status)}">${buttons.map(([value,emoji,label])=>`<button type="button" class="status-dot ${current===value?'active':''}" data-status-choice="${esc(value)}" ${isConsultation()?'disabled':''} title="${esc(label)}" aria-label="${esc(label)}">${emoji}</button>`).join('')}</div>`;
+    const signalControl=x=>{
+      const hasSubstitute=Boolean(parseEquipmentLabel(x.substitute).prefix);
+      const availableConfigs=hasSubstitute
+        ? activeStatusConfigs().filter(cfg=>cfg.signal==='green'||cfg.signal==='blue')
+        : activeStatusConfigs();
+      const current=hasSubstitute
+        ? (x.signal==='blue'?'blue':'green')
+        : normalizeSignal(x.signal,x.status);
+      const selectedConfig=hasSubstitute
+        ? (availableConfigs.find(cfg=>cfg.signal===current)||availableConfigs[0])
+        : (availableConfigs.find(cfg=>cfg.name===x.status)||availableConfigs[0]);
+      const options=availableConfigs.map(cfg=>`<option value="${esc(cfg.name)}" ${cfg.id===selectedConfig?.id?'selected':''}>${signalEmoji[cfg.signal]} ${esc(cfg.name)}</option>`).join('');
+      return `<div class="equipment-signal-wrap quick-status-wrap"><div class="equipment-signal-control quick-status-control" data-signal="${current}" data-covered="${hasSubstitute?'true':'false'}" title="Alteração rápida do status"><span class="equipment-signal-indicator" aria-hidden="true"></span><select class="equipment-status-quick-select quick-field" data-field="status" data-id="${x.id}" ${isConsultation()?'disabled':''} aria-label="Status do equipamento ${esc(x.prefix)}">${options}</select></div></div>`;
     };
-    $('#equipmentGrid').innerHTML=`<div class="equipment-table-wrap"><table class="equipment-table"><thead><tr><th>Equipamento</th><th>Status</th><th>Cliente</th><th>Localização</th><th>Condição / posicionamento</th><th>Combustível</th><th class="substitute-col">Substitui</th><th>Controle</th><th>Ações</th></tr></thead><tbody>${list.map(x=>`<tr style="--status-color:${statusColor[x.status]||'#1d8cff'}" data-equipment-row="${x.id}"><td data-label="Equipamento" class="equipment-id-cell"><strong>${esc(x.prefix)}</strong>${x.capacity?`<small>${esc(x.capacity)}</small>`:''}</td><td data-label="Status">${statusButtons(x)}</td><td data-label="Cliente"><input class="quick-field client-quick-field" data-field="client" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc(x.client||DEFAULT_CLIENTS[String(x.prefix||'').trim().toUpperCase()]||'')}" list="clientOptions" placeholder="Cliente"></td><td data-label="Localização"><input class="quick-field" data-field="location" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc(x.location||'')}" list="locationOptions"></td><td data-label="Condição / posicionamento"><input class="quick-field" data-field="condition" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc([x.loadStatus,x.condition].filter(Boolean).join(', '))}" placeholder="Patolado, estacionado..."></td><td data-label="Combustível"><div class="fuel-edit"><input type="number" min="0" max="100" class="quick-field" data-field="fuel" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${Number(x.fuel)||0}"><span>%</span></div></td><td data-label="Substitui" class="substitute-cell"><input class="quick-field substitute-quick-field" data-field="substitute" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc(x.substitute||'')}" list="substituteOptions" placeholder="—"></td><td data-label="Conferência" class="control-cell"><button type="button" class="update-control ${x.updateControl==='updated'?'is-updated':'is-pending'}" data-update-control="${x.id}" ${isConsultation()?'disabled':''} title="Clique para alterar manualmente entre Conferido e Pendente">${x.updateControl==='updated'?'✓ Conferido':'⚠ Pendente'}</button></td><td data-label="Ações" class="row-actions">${isConsultation()?'<span class="muted">Somente consulta</span>':`<button class="btn small primary" data-quick-save="${x.id}">Salvar</button><button class="btn small" data-edit="${x.id}">Detalhes</button><button class="icon-delete" title="Excluir" data-delete="${x.id}">×</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+    $('#equipmentGrid').innerHTML=`<div class="equipment-table-wrap"><table class="equipment-table"><thead><tr><th>Equipamento</th><th>Farol / status</th><th>Cliente</th><th>Localização</th><th>Condição / posicionamento</th><th>Combustível</th><th class="substitute-col">Substitui</th><th>Controle</th><th>Ações</th></tr></thead><tbody>${list.map(x=>`<tr style="--status-color:${signalColor[parseEquipmentLabel(x.substitute).prefix?(x.signal==='blue'?'blue':'green'):normalizeSignal(x.signal,x.status)]||'#1d8cff'}" data-equipment-row="${x.id}"><td data-label="Equipamento" class="equipment-id-cell"><strong>${esc(x.prefix)}</strong>${x.capacity?`<small>${esc(x.capacity)}</small>`:''}</td><td data-label="Status">${signalControl(x)}</td><td data-label="Cliente"><input class="quick-field client-quick-field" data-field="client" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc(x.client||DEFAULT_CLIENTS[String(x.prefix||'').trim().toUpperCase()]||'')}" list="clientOptions" placeholder="Cliente"></td><td data-label="Localização"><input class="quick-field" data-field="location" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc(x.location||'')}" list="locationOptions"></td><td data-label="Condição / posicionamento"><input class="quick-field" data-field="condition" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc([x.loadStatus,x.condition].filter(Boolean).join(', '))}" placeholder="Patolado, estacionado..."></td><td data-label="Combustível"><div class="fuel-edit"><input type="number" min="0" max="100" class="quick-field" data-field="fuel" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${Number(x.fuel)||0}"><span>%</span></div></td><td data-label="Substitui" class="substitute-cell"><input class="quick-field substitute-quick-field" data-field="substitute" ${isConsultation()?'disabled':''} data-id="${x.id}" value="${esc(x.substitute||'')}" list="substituteOptions" placeholder="—"></td><td data-label="Conferência" class="control-cell"><button type="button" class="update-control ${x.updateControl==='updated'?'is-updated':'is-pending'}" data-update-control="${x.id}" ${isConsultation()?'disabled':''} title="Clique para alterar manualmente entre Conferido e Pendente">${x.updateControl==='updated'?'✓ Conferido':'⚠ Pendente'}</button></td><td data-label="Ações" class="row-actions">${isConsultation()?'<span class="muted">Somente consulta</span>':`<button class="btn small primary" data-quick-save="${x.id}">Salvar</button><button class="btn small" data-edit="${x.id}">Detalhes</button><button class="icon-delete" title="Excluir" data-delete="${x.id}">×</button>`}</td></tr>`).join('')}</tbody></table></div>`;
     $('#equipmentEmpty').classList.toggle('hidden',list.length>0);
     updatePendingEquipmentCount();
   }
@@ -704,10 +772,25 @@
     const value=field=>{const el=row.querySelector(`[data-field="${field}"]`);return el?.dataset?.value??el?.value??'';};
     const condition=value('condition').trim();
     const substitute=parseEquipmentLabel(value('substitute'));
-    x.status=value('status')||x.status;x.client=value('client').trim();x.location=value('location').trim();x.condition=condition;x.loadStatus='';
+    const selectedStatus=value('status').trim()||x.status;
+    const selectedConfig=getStatusConfig(selectedStatus);
+    const hasSubstitute=Boolean(substitute.prefix);
+    if(hasSubstitute&&selectedConfig&&!['green','blue'].includes(selectedConfig.signal)){
+      alert('Quando houver equipamento substituto, o farol deve ficar somente em 🟢 Disponível ou 🔵 Em atendimento.');
+      return;
+    }
+    // Com substituição, preserva o status interno (Preventiva/Corretiva/Selo)
+    // e altera somente o farol operacional para verde ou azul.
+    if(hasSubstitute&&isInternalStatus(x.status)){
+      x.signal=selectedConfig?.signal==='blue'?'blue':'green';
+    }else{
+      x.status=selectedStatus;
+      x.signal=defaultSignalForStatus(selectedStatus);
+    }
+    x.client=value('client').trim();x.location=value('location').trim();x.condition=condition;x.loadStatus='';
     x.fuel=Math.max(0,Math.min(100,Number(value('fuel'))||0));
-    x.substitute=substitute.prefix?equipmentLabel(substitute.prefix,substitute.capacity):'';
-    const needsMaintenanceReason=Boolean(substitute.prefix)||['Preventiva','Corretiva'].includes(x.status);
+    x.substitute=hasSubstitute?equipmentLabel(substitute.prefix,substitute.capacity):'';
+    const needsMaintenanceReason=isInternalStatus(x.status);
     if(!needsMaintenanceReason){x.maintenanceReason='';x.maintenanceLocation='';}
     if(needsMaintenanceReason&&!String(x.maintenanceReason||'').trim()){
       openModal(id);
@@ -740,21 +823,66 @@
     setControlVisual(id,'pending');
     updatePendingEquipmentCount();
   }
+  function updateQuickStatusForSubstitution(row){
+    if(!row)return;
+    const substituteField=row.querySelector('[data-field="substitute"]');
+    const statusSelect=row.querySelector('.equipment-status-quick-select');
+    const control=row.querySelector('.equipment-signal-control');
+    if(!substituteField||!statusSelect||!control)return;
+    const hasSubstitute=Boolean(parseEquipmentLabel(substituteField.value).prefix);
+    Array.from(statusSelect.options).forEach(option=>{
+      const cfg=getStatusConfig(option.value);
+      option.disabled=hasSubstitute&&cfg&&!['green','blue'].includes(cfg.signal);
+    });
+    if(hasSubstitute){
+      const selectedCfg=getStatusConfig(statusSelect.value);
+      if(!selectedCfg||!['green','blue'].includes(selectedCfg.signal)){
+        const allowed=Array.from(statusSelect.options).find(option=>!option.disabled);
+        if(allowed)statusSelect.value=allowed.value;
+      }
+      const cfg=getStatusConfig(statusSelect.value);
+      control.dataset.signal=cfg?.signal==='blue'?'blue':'green';
+      row.style.setProperty('--status-color',signalColor[control.dataset.signal]||'#1d8cff');
+      control.dataset.covered='true';
+    }else{
+      control.dataset.covered='false';
+    }
+  }
   function updateCategoryFields(){
     const isMunck=$('#eqCategory').value==='GUINDAUTO SKY MUNCK';
     $('#loadStatusField').classList.toggle('hidden',!isMunck);
     if(!isMunck)$('#eqLoadStatus').value='';
   }
+  function updateModalSignalVisual(){
+    const control=$('#eqSignal')?.closest('.equipment-signal-control');
+    if(control)control.dataset.signal=$('#eqSignal').value;
+  }
+  function enforceModalSubstitutionSignal(){
+    const hasSubstitute=Boolean(parseEquipmentLabel($('#eqSubstitute')?.value||'').prefix);
+    const internal=isInternalStatus($('#eqStatus')?.value||'');
+    if(hasSubstitute&&internal){
+      if(!['green','blue'].includes($('#eqSignal').value))$('#eqSignal').value='green';
+      updateModalSignalVisual();
+      return;
+    }
+    suggestSignalFromStatus();
+  }
+  function suggestSignalFromStatus(){
+    $('#eqSignal').value=defaultSignalForStatus($('#eqStatus').value);
+    updateModalSignalVisual();
+  }
   function updateMaintenanceDetailsVisibility(){
-    const hasSubstitute=Boolean(parseEquipmentLabel($('#eqSubstitute').value).prefix);
-    const isMaintenanceStatus=['Preventiva','Corretiva'].includes($('#eqStatus').value);
-    const showSection=hasSubstitute||isMaintenanceStatus;
-    $('#maintenanceDetailsSection').classList.toggle('hidden',!showSection);
-    $('#maintenanceLocationField').classList.toggle('hidden',!showSection);
-    $('#eqMaintenanceLocation').required=showSection;
-    $('#eqMaintenanceReason').required=showSection;
-    if(!showSection)$('#eqMaintenanceLocation').value='';
-    if(!showSection)$('#eqMaintenanceReason').value='';
+    const isMaintenanceStatus=isInternalStatus($('#eqStatus').value);
+    $('#substituteField').classList.toggle('hidden',!isMaintenanceStatus);
+    $('#maintenanceDetailsSection').classList.toggle('hidden',!isMaintenanceStatus);
+    $('#maintenanceLocationField').classList.toggle('hidden',!isMaintenanceStatus);
+    $('#eqMaintenanceLocation').required=isMaintenanceStatus;
+    $('#eqMaintenanceReason').required=isMaintenanceStatus;
+    if(!isMaintenanceStatus){
+      $('#eqSubstitute').value='';
+      $('#eqMaintenanceLocation').value='';
+      $('#eqMaintenanceReason').value='';
+    }
   }
   function openModal(id){if(denyConsultation())return;
     const x=state.equipments.find(e=>e.id===id);
@@ -763,7 +891,9 @@
     $('#eqPrefix').value=x?.prefix||'';
     $('#eqCategory').value=x?.category||CATEGORIES[0];
     $('#eqCapacity').value=x?.capacity||'';
-    $('#eqStatus').value=x?.status||STATUSES[0];
+    $('#eqStatus').value=currentStatusName(x?.status)||activeStatusConfigs()[0]?.name||'Disponível';
+    $('#eqSignal').value=normalizeSignal(x?.signal,currentStatusName(x?.status));
+    updateModalSignalVisual();
     $('#eqClient').value=x?.client||DEFAULT_CLIENTS[String(x?.prefix||'').trim().toUpperCase()]||'';
     $('#eqLocation').value=x?.location||'';
     $('#eqLoadStatus').value=x?.loadStatus||'';
@@ -775,6 +905,7 @@
     $('#eqMaintenanceReason').value=x?.maintenanceReason||'';
     updateCategoryFields();
     updateMaintenanceDetailsVisibility();
+    enforceModalSubstitutionSignal();
     $('#modalBackdrop').classList.remove('hidden');
   }
   function closeModal(){$('#modalBackdrop').classList.add('hidden');$('#equipmentForm').reset()}
@@ -785,7 +916,7 @@
     selected.prefix=normalizeEquipmentPrefix(selected.prefix);
     const substitute=parseEquipmentLabel($('#eqSubstitute').value);
     const status=$('#eqStatus').value;
-    const needsMaintenanceReason=substitute.prefix||['Preventiva','Corretiva'].includes(status);
+    const needsMaintenanceReason=isInternalStatus(status);
     if(needsMaintenanceReason&&!$('#eqMaintenanceReason').value.trim()){
       alert('Informe o motivo da manutenção. Essa informação será usada somente no Histórico de Manutenção.');
       $('#maintenanceDetailsSection').classList.remove('hidden');
@@ -808,7 +939,7 @@
     }
     const data={
       id:id||newId(),prefix:selected.prefix,category:$('#eqCategory').value,
-      capacity:($('#eqCapacity').value.trim()||selected.capacity),status:$('#eqStatus').value,client:$('#eqClient').value.trim()||DEFAULT_CLIENTS[selected.prefix]||'',
+      capacity:($('#eqCapacity').value.trim()||selected.capacity),status:$('#eqStatus').value,signal:(substitute.prefix&&needsMaintenanceReason?(['green','blue'].includes($('#eqSignal').value)?$('#eqSignal').value:'green'):defaultSignalForStatus($('#eqStatus').value)),client:$('#eqClient').value.trim()||DEFAULT_CLIENTS[selected.prefix]||'',
       location:$('#eqLocation').value.trim(),loadStatus:$('#eqLoadStatus').value,
       substitute:substitute.prefix?equipmentLabel(substitute.prefix,substitute.capacity):'',
       fuel:Number($('#eqFuel').value)||0,condition:$('#eqCondition').value.trim(),notes:$('#eqNotes').value.trim(),
@@ -821,36 +952,49 @@
   }
   function deleteEquipment(id){if(denyConsultation())return;const x=state.equipments.find(e=>e.id===id);if(!x||!confirm(`Excluir o equipamento ${x.prefix}?`))return;state.equipments=state.equipments.filter(e=>e.id!==id);log('Equipamento excluído',x.prefix);save();renderPrefixOptions();renderEquipments();renderDashboard();toast('Equipamento excluído')}
   function oneLine(v=''){return String(v).replace(/\s+/g,' ').trim()}
-  function emojiForStatus(status=''){
+  function emojiForStatus(status='',signal=''){
+    if(SIGNALS.includes(signal))return signalEmoji[signal];
     const normalized=oneLine(status).toLowerCase();
-    if(normalized.includes('aguardando')||normalized.includes('disponível')||normalized.includes('disponivel'))return '🟢';
+    if(normalized.includes('aguardando')||normalized.includes('disponível')||normalized.includes('disponivel')||normalized.includes('atendeu'))return '🟢';
     if(normalized.includes('atendimento')||normalized.includes('atendeu')||normalized.includes('patolado'))return '🔵';
-    if(normalized.includes('renovação do selo')||normalized.includes('renovacao do selo'))return '🟡';
+    if(normalized.includes('atualização de selo')||normalized.includes('renovacao do selo'))return '🟡';
     if(normalized.includes('preventiva')||normalized.includes('corretiva')||normalized.includes('manutenção')||normalized.includes('manutencao'))return '🔴';
-    return statusEmoji[status]||'🔴';
+    return signalEmoji[defaultSignalForStatus(status)]||'🔴';
   }
   function equipmentLine(x){
-    const substitute=oneLine(x.substitute);
+    // Relatório operacional dinâmico: campos vazios são omitidos.
+    // Ordem: FAROL + PREFIXO – CLIENTE – LOCALIZAÇÃO – CONDIÇÃO – STATUS – COMBUSTÍVEL
+    const substitute=parseEquipmentLabel(oneLine(x.substitute));
+    const hasSubstitute=Boolean(substitute.prefix);
     const capacity=oneLine(x.capacity);
-    const sub=substitute?` (Sub. ${substitute})`:'';
-    const cap=capacity?` (${capacity})`:'';
-    const prefix=`${emojiForStatus(x.status)}*${oneLine(x.prefix)}${cap}${sub}*`;
-    const parts=[];
-    const client=oneLine(x.client);
-    const location=oneLine(x.location);
-    const loadStatus=oneLine(x.loadStatus).toLowerCase();
+    const cap=!hasSubstitute&&capacity?` ${capacity}`:'';
+    const substituteCapacity=oneLine(substitute.capacity).replace(/t\b/gi,'T');
+    const substitution=hasSubstitute
+      ? ` (Sub. ${substitute.prefix}${substituteCapacity?` (${substituteCapacity})`:''})`
+      : '';
+    const prefix=`${emojiForStatus(x.status,x.signal)} *${oneLine(x.prefix)}${cap}${substitution}*`;
+    const loadStatus=oneLine(x.loadStatus);
     const condition=oneLine(x.condition);
-    const status=oneLine(x.status);
-    const notes=oneLine(x.notes);
-    if(client)parts.push(client);
-    if(location)parts.push(location);
-    if(loadStatus)parts.push(loadStatus);
-    if(condition)parts.push(condition);
-    if(['Preventiva','Corretiva','Renovação do selo (Vale)'].includes(status) && !parts.some(v=>v.toLowerCase().includes(status.toLowerCase())))parts.push(status);
-    if(!parts.length && status)parts.push(status);
-    if(Number.isFinite(Number(x.fuel)))parts.push(`${Number(x.fuel)}%⛽${Number(x.fuel)<=state.settings.fuelLimit?'⚠️':''}`);
-    if(notes)parts.push(notes);
-    return `${prefix} – ${parts.join(' – ')}`;
+    const positioning=[loadStatus,condition].filter(Boolean).join(', ');
+    const fuelValue=Number(x.fuel);
+    const fuel=(x.fuel!==''&&x.fuel!==null&&x.fuel!==undefined&&Number.isFinite(fuelValue))
+      ? `${fuelValue}%⛽${fuelValue<=state.settings.fuelLimit?'⚠️':''}`
+      : '';
+    // Nos status operacionais verde e azul, o farol já informa a situação.
+    // O texto do status é mantido apenas para amarelo e vermelho, pois nesses
+    // casos ele detalha Atualização de Selo ou o tipo de manutenção.
+    const statusSignal=SIGNALS.includes(x.signal)?x.signal:defaultSignalForStatus(x.status);
+    const statusText=['green','blue'].includes(statusSignal)?'':oneLine(x.status);
+    const parts=[
+      prefix,
+      oneLine(x.client),
+      oneLine(x.location),
+      positioning,
+      statusText,
+      fuel,
+      oneLine(x.notes)
+    ].filter(Boolean);
+    return parts.join(' – ');
   }
   function loadReportDefaults(){
     const d=state.reportDefaults||{};
@@ -888,7 +1032,7 @@
       out+=`\n*${cat}:*\n`;
       list.forEach(x=>{out+=`\n${equipmentLine(x)}\n`});
     });
-    out+='\n\n*Legenda:*\n🟢 Disponível\n🔵 Em atendimento / Atendeu\n🟡 Renovação do selo (Vale)\n🔴 Manutenção';
+    out+='\n\n*Legenda:*\n🟢 Disponível\n🔵 Em atendimento / Atendeu\n🟡 Atualização de Selo (Vale)\n🔴 Manutenção Preventiva / Corretiva';
     out+='\n────────────────────────────────\n\n📱 Gerado por XCMG REPORT';
     return out;
   }
@@ -900,13 +1044,16 @@
     out+=record.items.map(x=>{
       const label=equipmentLabel(x.prefix,x.capacity);
       if(x.replacedBy?.length){
-        const lines=[`🔴 *${label}* – Em manutenção`];
+        // v2.12.73: equipamentos substituídos pertencem ao histórico de manutenção
+        // e devem aparecer sempre com farol vermelho, independentemente do status atual.
+        // A substituição já é informada na linha abaixo; não repetir “Substituído” no título.
+        const lines=[`🔴 *${label}*`];
         if(x.maintenanceLocation)lines.push(`📍 Local: ${x.maintenanceLocation}`);
         if(x.maintenanceReason)lines.push(`🛠 Motivo: ${x.maintenanceReason}`);
         lines.push(`   ↳ Substituído por: ${x.replacedBy.join(', ')}`);
         return lines.join('\n');
       }
-      const lines=[`🔴 *${label}* – ${x.status||'Em manutenção'}`];
+      const lines=[`${emojiForStatus(x.status)} *${label}* – ${x.status||'Em manutenção'}`];
       if(x.maintenanceLocation)lines.push(`📍 Local: ${x.maintenanceLocation}`);
       if(x.maintenanceReason)lines.push(`🛠 Motivo: ${x.maintenanceReason}`);
       return lines.join('\n');
@@ -933,7 +1080,7 @@
     const list=maintenanceHistory.filter(r=>!q||[r.reportDate,r.team,r.savedBy,...r.items.flatMap(x=>[x.prefix,x.capacity,x.status,x.location,x.maintenanceLocation,x.maintenanceReason,...(x.replacedBy||[])])].join(' ').toLowerCase().includes(q));
     host.innerHTML=list.map(r=>{
       const date=new Intl.DateTimeFormat('pt-BR').format(new Date(r.reportDate+'T12:00:00'));
-      const rows=r.items.map(x=>{let detail='';if(x.replacedBy?.length){const parts=['<b>Em manutenção</b>'];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);parts.push(`<small>↳ Substituído por: ${esc(x.replacedBy.join(', '))}</small>`);detail=parts.join('<br>')}else{const parts=[`<b>${esc(x.status||'Em manutenção')}</b>`];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);detail=parts.join('<br>')}return `<div class="maintenance-history-row"><strong>${esc(equipmentLabel(x.prefix,x.capacity))}</strong><span>${detail}</span></div>`}).join('')||'<div class="empty compact">Nenhum equipamento em manutenção neste fechamento.</div>';
+      const rows=r.items.map(x=>{let detail='';if(x.replacedBy?.length){const parts=[];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);parts.push(`<small>↳ Substituído por: ${esc(x.replacedBy.join(', '))}</small>`);detail=parts.join('<br>')}else{const parts=[`<b>${esc(x.status||'Em manutenção')}</b>`];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);detail=parts.join('<br>')}return `<div class="maintenance-history-row"><strong>${esc(equipmentLabel(x.prefix,x.capacity))}</strong><span>${detail}</span></div>`}).join('')||'<div class="empty compact">Nenhum equipamento em manutenção neste fechamento.</div>';
       const deleteButton=currentUser?.role==='admin'?`<button class="btn small danger" data-delete-maintenance-history="${r.id}">Excluir registro</button>`:'';
       return `<article class="panel maintenance-history-card"><div class="panel-head"><div><span class="eyebrow">${esc(date)}</span><h2>${esc(r.team)}</h2><small>Fechado por ${esc(r.savedBy||'usuário')} em ${fmtDate(r.savedAt)}</small></div><div class="actions"><button class="btn small" data-copy-maintenance="${r.id}">Copiar mensagem</button><button class="btn small" data-share-maintenance="${r.id}">Compartilhar</button>${deleteButton}</div></div><div class="maintenance-history-rows">${rows}</div><div class="maintenance-history-total">Total: <strong>${r.items.length}</strong></div></article>`;
     }).join('')||'<div class="empty">Nenhum fechamento de manutenção registrado nos últimos 90 dias.</div>';
@@ -951,7 +1098,46 @@
   }
   function saveReport(){if(denyConsultation())return;generateReport();const text=$('#reportOutput').value;state.reports.unshift({id:newId(),date:new Date().toISOString(),text});log('Relatório salvo','Relatório salvo com sucesso');save();saveTurnSnapshot('report');saveMaintenanceSnapshot();renderHistory();toast('Relatório salvo e histórico da manutenção atualizado')}
   function renderHistory(){const q=$('#historySearch').value.trim().toLowerCase(),list=state.history.filter(x=>!q||`${x.action} ${x.detail}`.toLowerCase().includes(q));$('#historyList').innerHTML=list.map(h=>`<div class="timeline-item"><div class="timeline-date">${fmtDate(h.date)}</div><div><strong>${esc(h.action)}</strong><div class="muted">${esc(h.detail)}</div></div></div>`).join('')||'<div class="empty">Nenhum registro encontrado.</div>'}
-  function loadSettingsForm(){$('#cfgCompany').value=state.settings.company;$('#cfgTitle').value=state.settings.title;$('#cfgFuelLimit').value=state.settings.fuelLimit}
+  function renderStatusManager(){
+    const panel=$('#equipmentStatusSettingsPanel');
+    if(!panel)return;
+    panel.classList.toggle('hidden',currentUser?.role!=='admin');
+    const host=$('#equipmentStatusList');
+    if(!host)return;
+    host.innerHTML=statusConfigs.map(x=>`<div class="status-config-row ${x.active?'':'is-inactive'}"><span class="status-order">${x.order}</span><span class="status-config-signal">${signalEmoji[x.signal]}</span><div><strong>${esc(x.name)}</strong><small>${x.type==='internal'?'Interno — abre Manutenção':'Operacional'}</small></div><span class="status-active-badge">${x.active?'Ativo':'Inativo'}</span><button type="button" class="btn small" data-edit-equipment-status="${x.id}">Editar</button></div>`).join('');
+  }
+  function resetStatusEditor(){
+    $('#statusConfigId').value='';
+    $('#statusConfigName').value='';
+    $('#statusConfigSignal').value='green';
+    $('#statusConfigType').value='operational';
+    $('#statusConfigOrder').value=statusConfigs.length+1;
+    $('#statusConfigActive').checked=true;
+    $('#statusConfigFormTitle').textContent='Novo status';
+    $('#cancelStatusConfigEdit').classList.add('hidden');
+  }
+  function editEquipmentStatus(id){
+    if(currentUser?.role!=='admin')return;
+    const x=statusConfigs.find(s=>s.id===id);if(!x)return;
+    $('#statusConfigId').value=x.id;$('#statusConfigName').value=x.name;$('#statusConfigSignal').value=x.signal;$('#statusConfigType').value=x.type;$('#statusConfigOrder').value=x.order;$('#statusConfigActive').checked=x.active;
+    $('#statusConfigFormTitle').textContent='Editar status';$('#cancelStatusConfigEdit').classList.remove('hidden');$('#statusConfigName').focus();
+  }
+  function submitStatusConfig(ev){
+    ev.preventDefault();if(currentUser?.role!=='admin'){alert('Somente o administrador pode editar os status.');return}
+    const id=$('#statusConfigId').value,name=$('#statusConfigName').value.trim();
+    if(!name){alert('Informe o nome do status.');return}
+    const duplicate=statusConfigs.find(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase());if(duplicate){alert('Já existe um status com esse nome.');return}
+    const data={name,signal:$('#statusConfigSignal').value,type:$('#statusConfigType').value,order:Math.max(1,Number($('#statusConfigOrder').value)||1),active:$('#statusConfigActive').checked};
+    if(id){
+      const i=statusConfigs.findIndex(x=>x.id===id),old=statusConfigs[i];
+      const aliases=[...(old.aliases||[])];if(old.name!==name&&!aliases.includes(old.name))aliases.push(old.name);
+      statusConfigs[i]={...old,...data,aliases};
+      state.equipments.forEach(e=>{if(e.status===old.name||(old.aliases||[]).includes(e.status)){e.status=name;e.signal=data.signal}});
+      log('Status do equipamento editado',`${old.name} → ${name}`);
+    }else statusConfigs.push({id:newId(),...data,aliases:[]});
+    saveStatusConfigs();setupSelects();renderStatusManager();renderEquipments();renderDashboard();generateReport();save();resetStatusEditor();toast('Status do equipamento salvo');
+  }
+  function loadSettingsForm(){$('#cfgCompany').value=state.settings.company;$('#cfgTitle').value=state.settings.title;$('#cfgFuelLimit').value=state.settings.fuelLimit;renderStatusManager();resetStatusEditor()}
   function renderUsers(){
     if(currentUser?.role!=='admin'){go('dashboard');return}
     $('#userList').innerHTML=auth.users.map(u=>{
@@ -985,20 +1171,35 @@
   function closeUserModal(){$('#userModalBackdrop').classList.add('hidden');$('#newUserAccessLevel').disabled=false}
   async function createUser(e){
     e.preventDefault();if(currentUser?.role!=='admin')return;
-    if(connectionIsOnline())await ensureAuthFromRemote();
-    if(currentUser?.role!=='admin'){alert('Sessão atualizada. Entre novamente para gerenciar usuários.');return}
-    const editId=$('#editUserId').value;
-    const name=$('#userFullName').value.trim(),team=$('#userTeam').value.trim(),username=$('#newUsername').value.trim().toLowerCase(),password=$('#newUserPassword').value,accessLevel=$('#newUserAccessLevel').value==='consultation'?'consultation':'full';
-    if(auth.users.some(u=>u.username.toLowerCase()===username&&u.id!==editId)){alert('Este nome de usuário já existe.');return}
-    if(editId){
-      const user=auth.users.find(u=>u.id===editId);if(!user)return;
-      user.name=name;user.team=team;user.username=username;
-      if(user.role!=='admin')user.accessLevel=accessLevel;
-      if(password){if(password.length<4){alert('A nova senha deve ter pelo menos 4 caracteres.');return}user.passwordHash=await hashPassword(password)}
-      saveAuth();if(user.id===currentUser.id){currentUser=user;$('#currentUserName').textContent=user.name;$('#currentUserTeam').textContent=user.team}closeUserModal();renderUsers();toast('Usuário atualizado com sucesso');return;
+    const saveButton=$('#saveUserBtn');
+    if(saveButton?.disabled)return;
+    if(saveButton){saveButton.disabled=true;saveButton.dataset.originalText=saveButton.textContent;saveButton.textContent='Salvando...'}
+    try{
+      if(connectionIsOnline())await ensureAuthFromRemote();
+      if(currentUser?.role!=='admin'){alert('Sessão atualizada. Entre novamente para gerenciar usuários.');return}
+      const editId=$('#editUserId').value;
+      const name=$('#userFullName').value.trim(),team=$('#userTeam').value.trim(),username=$('#newUsername').value.trim().toLowerCase(),password=$('#newUserPassword').value,accessLevel=$('#newUserAccessLevel').value==='consultation'?'consultation':'full';
+      if(auth.users.some(u=>u.username.toLowerCase()===username&&u.id!==editId)){alert('Este nome de usuário já existe.');return}
+      if(editId){
+        const user=auth.users.find(u=>u.id===editId);if(!user)return;
+        user.name=name;user.team=team;user.username=username;
+        if(user.role!=='admin')user.accessLevel=accessLevel;
+        if(password){if(password.length<4){alert('A nova senha deve ter pelo menos 4 caracteres.');return}user.passwordHash=await hashPassword(password)}
+        const synchronized=await saveAuth({requireRemote:true});
+        if(!synchronized){alert('A alteração foi mantida neste aparelho, mas ainda não foi confirmada no Supabase. Conecte-se à internet e aguarde a sincronização antes de publicar uma nova versão.');renderUsers();return}
+        if(user.id===currentUser.id){currentUser=user;$('#currentUserName').textContent=user.name;$('#currentUserTeam').textContent=user.team}
+        closeUserModal();renderUsers();toast('Usuário atualizado e sincronizado com sucesso');return;
+      }
+      const user={id:newId(),name,team,username,passwordHash:await hashPassword(password),role:'user',accessLevel,createdAt:new Date().toISOString()};
+      auth.users.push(user);
+      const synchronized=await saveAuth({requireRemote:true});
+      localStorage.setItem(USER_KEY(user.id),JSON.stringify(clone(initial)));
+      await remoteSet(USER_KEY(user.id),clone(initial));
+      if(!synchronized){alert('O usuário foi salvo neste aparelho, mas ainda não foi confirmado no Supabase. Conecte-se à internet e aguarde a sincronização antes de publicar uma nova versão.');renderUsers();return}
+      closeUserModal();renderUsers();toast('Usuário criado e sincronizado com sucesso');
+    }finally{
+      if(saveButton){saveButton.disabled=false;saveButton.textContent=saveButton.dataset.originalText||'Salvar';delete saveButton.dataset.originalText}
     }
-    const user={id:newId(),name,team,username,passwordHash:await hashPassword(password),role:'user',accessLevel,createdAt:new Date().toISOString()};
-    auth.users.push(user);saveAuth();localStorage.setItem(USER_KEY(user.id),JSON.stringify(clone(initial)));remoteSet(USER_KEY(user.id),clone(initial));closeUserModal();renderUsers();toast('Usuário criado com sucesso');
   }
   async function changeOwnPassword(e){
     e.preventDefault();
@@ -1008,7 +1209,7 @@
     if(await hashPassword(current)!==currentUser.passwordHash){alert('A senha atual está incorreta.');return}
     if(newPassword!==confirmPassword){alert('A confirmação da nova senha não confere.');return}
     if(newPassword.length<4){alert('A nova senha deve ter pelo menos 4 caracteres.');return}
-    currentUser.passwordHash=await hashPassword(newPassword);saveAuth();$('#changePasswordForm').reset();log('Senha alterada',`${currentUser.name} alterou a própria senha`);save();renderHistory();toast('Senha alterada com sucesso');
+    currentUser.passwordHash=await hashPassword(newPassword);const synchronized=await saveAuth({requireRemote:true});if(!synchronized){alert('A nova senha foi mantida neste aparelho, mas ainda não foi confirmada no Supabase. Aguarde a sincronização antes de sair.');return}$('#changePasswordForm').reset();log('Senha alterada',`${currentUser.name} alterou a própria senha`);save();renderHistory();toast('Senha alterada com sucesso');
   }
   function openResetPasswordModal(userId){
     if(currentUser?.role!=='admin')return;
@@ -1022,20 +1223,22 @@
     if(password!==confirmPassword){alert('A confirmação da nova senha não confere.');return}
     if(password.length<4){alert('A nova senha deve ter pelo menos 4 caracteres.');return}
     const user=auth.users.find(u=>u.id===id);if(!user)return;
-    user.passwordHash=await hashPassword(password);saveAuth();closeResetPasswordModal();log('Senha redefinida',`${currentUser.name} redefiniu a senha de ${user.name}`);save();renderHistory();toast('Senha redefinida com sucesso');
+    user.passwordHash=await hashPassword(password);const synchronized=await saveAuth({requireRemote:true});if(!synchronized){alert('A nova senha foi mantida neste aparelho, mas ainda não foi confirmada no Supabase. Aguarde a sincronização antes de sair.');return}closeResetPasswordModal();log('Senha redefinida',`${currentUser.name} redefiniu a senha de ${user.name}`);save();renderHistory();toast('Senha redefinida com sucesso');
   }
-  function deleteUser(userId){
+  async function deleteUser(userId){
     if(currentUser?.role!=='admin')return;
+    if(connectionIsOnline())await ensureAuthFromRemote();
     const user=auth.users.find(u=>u.id===userId);if(!user)return;
     if(user.id===currentUser.id){alert('O usuário atualmente conectado não pode ser excluído.');return}
     const confirmed=confirm(`Excluir o usuário ${user.name} (@${user.username})?\n\nOs dados e relatórios salvos exclusivamente neste dispositivo para esse usuário também serão removidos.`);
     if(!confirmed)return;
     auth.users=auth.users.filter(u=>u.id!==user.id);
     localStorage.removeItem(USER_KEY(user.id));
-    remoteDelete(USER_KEY(user.id));
+    await remoteDelete(USER_KEY(user.id));
     const last=getLastTurn();
-    if(last?.userId===user.id){localStorage.removeItem(TURN_KEY);remoteDelete(TURN_KEY)}
-    saveAuth();
+    if(last?.userId===user.id){localStorage.removeItem(TURN_KEY);await remoteDelete(TURN_KEY)}
+    const synchronized=await saveAuth({requireRemote:true});
+    if(!synchronized){alert('A exclusão foi mantida neste aparelho, mas ainda não foi confirmada no Supabase. Aguarde a sincronização antes de publicar uma nova versão.');renderUsers();return}
     log('Usuário excluído',`${currentUser.name} excluiu o acesso de ${user.name} (@${user.username})`);
     save();renderUsers();renderHistory();updateTurnPanel();toast('Usuário excluído com sucesso');
   }
@@ -1063,7 +1266,7 @@
     localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({...auth,currentUserId:null}));
     currentUser=user;startSession();
   }
-  function logout(){if(hasPendingEquipmentChanges()&&!confirm('Existem alterações que ainda não foram salvas. Deseja realmente sair?'))return;flushAutoTurnSave();auth.currentUserId=null;saveAuth();currentUser=null;location.reload()}
+  function logout(){if(hasPendingEquipmentChanges()&&!confirm('Existem alterações que ainda não foram salvas. Deseja realmente sair?'))return;flushAutoTurnSave();auth.currentUserId=null;localStorage.setItem(AUTH_KEY,JSON.stringify(authPersistentPayload()));currentUser=null;location.reload()}
   function startSession(){
     state=loadUserState(currentUser.id);$('#loginScreen').classList.add('hidden');$('.app-shell').classList.remove('hidden');
     $('#currentUserName').textContent=currentUser.name;$('#currentUserTeam').textContent=currentUser.team;
@@ -1110,16 +1313,30 @@
     $('#loginForm').onsubmit=login;$('#logoutBtn').onclick=logout;$('#newUserBtn').onclick=openUserModal;$('#closeUserModalBtn').onclick=closeUserModal;$('#cancelUserModalBtn').onclick=closeUserModal;$('#userForm').onsubmit=createUser;$('#userModalBackdrop').onclick=e=>{if(e.target.id==='userModalBackdrop')closeUserModal()};$('#changePasswordForm').onsubmit=changeOwnPassword;$('#resetPasswordForm').onsubmit=resetUserPassword;$('#closeResetPasswordModalBtn').onclick=closeResetPasswordModal;$('#cancelResetPasswordBtn').onclick=closeResetPasswordModal;$('#resetPasswordModalBackdrop').onclick=e=>{if(e.target.id==='resetPasswordModalBackdrop')closeResetPasswordModal()};
     $('#newMessageBtn').onclick=openMessageModal;$('#closeMessageModalBtn').onclick=closeMessageModal;$('#cancelMessageBtn').onclick=closeMessageModal;$('#messageForm').onsubmit=createMessage;$('#messageModalBackdrop').onclick=e=>{if(e.target.id==='messageModalBackdrop')closeMessageModal()};$('#messageSearch').oninput=renderMessages;$('#messagePriorityFilter').onchange=renderMessages;
     $('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b)go(b.dataset.page)});
-    document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)go(g.dataset.go);const ed=e.target.closest('[data-edit]');if(ed)openModal(ed.dataset.edit);const del=e.target.closest('[data-delete]');if(del)deleteEquipment(del.dataset.delete);const control=e.target.closest('[data-update-control]');if(control)toggleUpdateControl(control.dataset.updateControl);const choice=e.target.closest('[data-status-choice]');if(choice){if(denyConsultation())return;const group=choice.closest('[data-field="status"]');if(group){let selected=choice.dataset.statusChoice;if(selected==='maintenance'){const current=group.dataset.value;selected=['Preventiva','Corretiva'].includes(current)?current:'Preventiva';}group.dataset.value=selected;group.querySelectorAll('.status-dot').forEach(btn=>btn.classList.toggle('active',btn===choice));const row=group.closest('tr');if(row){row.style.setProperty('--status-color',statusColor[selected]||'#1d8cff');markRowPending(group.dataset.id);}}}const qs=e.target.closest('[data-quick-save]');if(qs)quickSaveEquipment(qs.dataset.quickSave);const eu=e.target.closest('[data-edit-user]');if(eu)openEditUserModal(eu.dataset.editUser);const rp=e.target.closest('[data-reset-password]');if(rp)openResetPasswordModal(rp.dataset.resetPassword);const du=e.target.closest('[data-delete-user]');if(du)deleteUser(du.dataset.deleteUser);const cm=e.target.closest('[data-copy-maintenance]');if(cm){const r=maintenanceHistory.find(x=>x.id===cm.dataset.copyMaintenance);if(r)navigator.clipboard.writeText(maintenanceMessage(r)).then(()=>toast('Mensagem da manutenção copiada'))}const sm=e.target.closest('[data-share-maintenance]');if(sm){const r=maintenanceHistory.find(x=>x.id===sm.dataset.shareMaintenance);if(r){const text=maintenanceMessage(r);if(navigator.share)navigator.share({title:'Equipamentos em manutenção',text});else navigator.clipboard.writeText(text).then(()=>toast('Mensagem copiada para compartilhar'))}}const dmh=e.target.closest('[data-delete-maintenance-history]');if(dmh)deleteMaintenanceHistoryRecord(dmh.dataset.deleteMaintenanceHistory);const mt=e.target.closest('[data-message-tab]');if(mt){messageTab=mt.dataset.messageTab;renderMessages()}const rm=e.target.closest('[data-read-message]');if(rm)markMessageRead(rm.dataset.readMessage);const dm=e.target.closest('[data-delete-message]');if(dm)deleteMessage(dm.dataset.deleteMessage);const cmsg=e.target.closest('[data-copy-message]');if(cmsg){const m=messages.find(x=>x.id===cmsg.dataset.copyMessage);if(m)navigator.clipboard.writeText(messageShareText(m)).then(()=>toast('Recado copiado'))}const smsg=e.target.closest('[data-share-message]');if(smsg){const m=messages.find(x=>x.id===smsg.dataset.shareMessage);if(m){const text=messageShareText(m);if(navigator.share)navigator.share({title:m.subject,text});else navigator.clipboard.writeText(text).then(()=>toast('Recado copiado para compartilhar'))}}});
-    $('#equipmentGrid').addEventListener('input',e=>{const field=e.target.closest('.quick-field');if(field)markRowPending(field.dataset.id);});
-    $('#equipmentGrid').addEventListener('change',e=>{const field=e.target.closest('.quick-field');if(field)markRowPending(field.dataset.id);});
+    document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)go(g.dataset.go);const ed=e.target.closest('[data-edit]');if(ed)openModal(ed.dataset.edit);const del=e.target.closest('[data-delete]');if(del)deleteEquipment(del.dataset.delete);const control=e.target.closest('[data-update-control]');if(control)toggleUpdateControl(control.dataset.updateControl);const qs=e.target.closest('[data-quick-save]');if(qs)quickSaveEquipment(qs.dataset.quickSave);const es=e.target.closest('[data-edit-equipment-status]');if(es)editEquipmentStatus(es.dataset.editEquipmentStatus);const eu=e.target.closest('[data-edit-user]');if(eu)openEditUserModal(eu.dataset.editUser);const rp=e.target.closest('[data-reset-password]');if(rp)openResetPasswordModal(rp.dataset.resetPassword);const du=e.target.closest('[data-delete-user]');if(du)deleteUser(du.dataset.deleteUser);const cm=e.target.closest('[data-copy-maintenance]');if(cm){const r=maintenanceHistory.find(x=>x.id===cm.dataset.copyMaintenance);if(r)navigator.clipboard.writeText(maintenanceMessage(r)).then(()=>toast('Mensagem da manutenção copiada'))}const sm=e.target.closest('[data-share-maintenance]');if(sm){const r=maintenanceHistory.find(x=>x.id===sm.dataset.shareMaintenance);if(r){const text=maintenanceMessage(r);if(navigator.share)navigator.share({title:'Equipamentos em manutenção',text});else navigator.clipboard.writeText(text).then(()=>toast('Mensagem copiada para compartilhar'))}}const dmh=e.target.closest('[data-delete-maintenance-history]');if(dmh)deleteMaintenanceHistoryRecord(dmh.dataset.deleteMaintenanceHistory);const mt=e.target.closest('[data-message-tab]');if(mt){messageTab=mt.dataset.messageTab;renderMessages()}const rm=e.target.closest('[data-read-message]');if(rm)markMessageRead(rm.dataset.readMessage);const dm=e.target.closest('[data-delete-message]');if(dm)deleteMessage(dm.dataset.deleteMessage);const cmsg=e.target.closest('[data-copy-message]');if(cmsg){const m=messages.find(x=>x.id===cmsg.dataset.copyMessage);if(m)navigator.clipboard.writeText(messageShareText(m)).then(()=>toast('Recado copiado'))}const smsg=e.target.closest('[data-share-message]');if(smsg){const m=messages.find(x=>x.id===smsg.dataset.shareMessage);if(m){const text=messageShareText(m);if(navigator.share)navigator.share({title:m.subject,text});else navigator.clipboard.writeText(text).then(()=>toast('Recado copiado para compartilhar'))}}});
+    $('#equipmentGrid').addEventListener('input',e=>{const field=e.target.closest('.quick-field');if(field)markRowPending(field.dataset.id);const substitute=e.target.closest('.substitute-quick-field');if(substitute)updateQuickStatusForSubstitution(substitute.closest('tr'));});
+    $('#equipmentGrid').addEventListener('change',e=>{
+      const field=e.target.closest('.quick-field');
+      if(field)markRowPending(field.dataset.id);
+      const substitute=e.target.closest('.substitute-quick-field');
+      if(substitute)updateQuickStatusForSubstitution(substitute.closest('tr'));
+      const statusSelect=e.target.closest('.equipment-status-quick-select');
+      if(statusSelect){
+        const config=getStatusConfig(statusSelect.value);
+        const row=statusSelect.closest('tr');
+        const control=statusSelect.closest('.equipment-signal-control');
+        if(config&&control)control.dataset.signal=config.signal;
+        if(config&&row)row.style.setProperty('--status-color',signalColor[config.signal]||'#1d8cff');
+        markRowPending(statusSelect.dataset.id);
+      }
+      const signal=e.target.closest('.equipment-signal-select');
+      if(signal){const control=signal.closest('.equipment-signal-control');if(control)control.dataset.signal=signal.value;markRowPending(signal.dataset.id);}
+    });
     $('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
     $('#themeBtn').onclick=()=>{state.settings.theme=state.settings.theme==='light'?'dark':'light';save();applyTheme()};
     $('#newEquipmentBtn').onclick=()=>{if(!denyConsultation())openModal()};$('#closeModalBtn').onclick=closeModal;$('#cancelModalBtn').onclick=closeModal;
     $('#modalBackdrop').onclick=e=>{if(e.target.id==='modalBackdrop')closeModal()};
-    $('#equipmentForm').onsubmit=submitEquipment;$('#eqCategory').onchange=updateCategoryFields;$('#eqStatus').addEventListener('change',updateMaintenanceDetailsVisibility);
-    $('#eqSubstitute').addEventListener('input',updateMaintenanceDetailsVisibility);
-    $('#eqSubstitute').addEventListener('change',updateMaintenanceDetailsVisibility);
+    $('#equipmentForm').onsubmit=submitEquipment;$('#eqCategory').onchange=updateCategoryFields;$('#eqStatus').addEventListener('change',()=>{updateMaintenanceDetailsVisibility();enforceModalSubstitutionSignal()});$('#eqSubstitute').addEventListener('input',enforceModalSubstitutionSignal);$('#eqSubstitute').addEventListener('change',enforceModalSubstitutionSignal);$('#eqSignal').disabled=true;
     $('#eqPrefix').addEventListener('change',()=>{syncCapacityFromPrefix();syncClientFromPrefix(true)});
     $('#eqPrefix').addEventListener('input',()=>syncClientFromPrefix(false));
     $('#eqPrefix').addEventListener('input',()=>{if($('#eqPrefix').value.includes('('))syncCapacityFromPrefix()});
@@ -1133,7 +1350,7 @@
     $('#copyReportBtn').onclick=async()=>{generateReport();await navigator.clipboard.writeText($('#reportOutput').value);toast('Relatório copiado')};
     $('#shareReportBtn').onclick=async()=>{generateReport();const text=$('#reportOutput').value;if(navigator.share)await navigator.share({title:'XCMG Report',text});else{await navigator.clipboard.writeText(text);toast('Copiado para compartilhar')}};
     $('#historySearch').oninput=renderHistory;$('#maintenanceHistorySearch').oninput=renderMaintenanceHistory;$('#clearHistoryBtn').onclick=()=>{if(denyConsultation())return;if(confirm('Limpar todo o histórico?')){state.history=[];save();renderHistory();renderDashboard()}};
-    $('#saveSettingsBtn').onclick=()=>{if(denyConsultation())return;state.settings.company=$('#cfgCompany').value.trim()||'XCMG';state.settings.title=$('#cfgTitle').value.trim()||'STATUS XCMG MINA';state.settings.fuelLimit=Math.max(0,Math.min(100,Number($('#cfgFuelLimit').value)||30));save();renderDashboard();toast('Configurações salvas')};
+    $('#statusConfigForm').onsubmit=submitStatusConfig;$('#cancelStatusConfigEdit').onclick=resetStatusEditor;$('#saveSettingsBtn').onclick=()=>{if(denyConsultation())return;state.settings.company=$('#cfgCompany').value.trim()||'XCMG';state.settings.title=$('#cfgTitle').value.trim()||'STATUS XCMG MINA';state.settings.fuelLimit=Math.max(0,Math.min(100,Number($('#cfgFuelLimit').value)||30));save();renderDashboard();toast('Configurações salvas')};
     $('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`xcmg-report-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)};
     $('#importInput').onchange=async e=>{if(denyConsultation())return;try{const data=JSON.parse(await e.target.files[0].text());if(!data.equipments)throw Error();state=data;state.equipments=state.equipments.map(migrateEquipment);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Backup importado')}catch{alert('Arquivo de backup inválido.')}};
     $('#resetBtn').onclick=()=>{if(denyConsultation())return;if(confirm('Restaurar todos os dados iniciais?')){state=clone(initial);save();applyTheme();loadSettingsForm();renderDashboard();renderEquipments();renderHistory();toast('Dados restaurados')}};
@@ -1158,6 +1375,8 @@
     // Envia pendências locais antes de puxar o remoto, para não perder alterações offline.
     await flushOfflineQueue();
     await hydrateRemoteCache();
+    try{statusConfigs=normalizeStatusConfigs(JSON.parse(localStorage.getItem(STATUS_CONFIG_KEY)))}catch{statusConfigs=normalizeStatusConfigs(DEFAULT_STATUS_CONFIGS)}
+    setupSelects();
     loadMaintenanceHistory();
     loadMessagesLocal();
     await loadAuth();

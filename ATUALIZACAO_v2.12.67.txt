@@ -1,0 +1,8 @@
+XCMG REPORT — ATUALIZAÇÃO v2.12.67
+
+ALTERAÇÃO REALIZADA
+- Removida a opção separada “🔵 Atendeu” do seletor Status do equipamento no Relatório Operacional e no painel principal.
+- Mantida a opção “🔵 Em atendimento”.
+- A expressão “Em atendimento / Atendeu” permanece somente na legenda do Relatório Operacional.
+- Registros antigos salvos como “Atendeu” são interpretados automaticamente como “Em atendimento”, sem perda dos dados.
+- Nenhuma outra regra operacional foi alterada.

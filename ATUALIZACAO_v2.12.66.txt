@@ -1,0 +1,8 @@
+XCMG REPORT — ATUALIZAÇÃO v2.12.66
+
+RELATÓRIO OPERACIONAL
+- Removido o texto do status nas linhas com farol verde e azul.
+- O emoji passa a representar sozinho os status Disponível, Em atendimento e Atendeu.
+- Exemplo: 🔵 *1JA410* – Perfuração – Sistema 3 – Carregado – 70%⛽
+- Mantidos os textos de Atualização de Selo (Vale) e Manutenção Preventiva/Corretiva para os faróis amarelo e vermelho.
+- Nenhuma outra função foi alterada.

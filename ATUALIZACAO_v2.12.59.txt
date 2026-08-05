@@ -1,0 +1,13 @@
+XCMG REPORT v2.12.59 — PADRÃO DO RELATÓRIO OPERACIONAL
+
+Alteração aplicada no relatório operacional:
+
+FAROL + PREFIXO – CLIENTE – LOCALIZAÇÃO – CONDIÇÃO/POSICIONAMENTO – STATUS – COMBUSTÍVEL
+
+Exemplo:
+🟡*1JA348* – Pool – Base Externa XCMG – Vazio – Atualização de Selo (Vale) – 91%⛽
+
+Quando houver substituição, a informação continua na linha seguinte:
+↳ Substituído por: 1JA218
+
+Campos sem informação são exibidos como “—”, preservando sempre a mesma ordem de leitura.

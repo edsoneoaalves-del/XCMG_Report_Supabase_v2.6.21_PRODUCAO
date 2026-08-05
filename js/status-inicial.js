@@ -1,6 +1,21 @@
 (() => {
   'use strict';
   const STORAGE_KEY='xcmg_report_initial_status_v1';
+  const STATUS_CONFIG_KEY='xcmg_report_effective_status_config_v1';
+  const DEFAULT_STATUS_CONFIG=[
+    {key:'green',emoji:'🟢',label:'Com operador / com sinaleiro'},
+    {key:'orange',emoji:'🟠',label:'Sem operador / sem sinaleiro'},
+    {key:'yellow',emoji:'🟡',label:'Atualização de Selo (Vale)'},
+    {key:'red',emoji:'🔴',label:'Manutenção corretiva/preventiva'}
+  ];
+  let statusConfig=[];
+  function loadStatusConfig(){
+    try{statusConfig=JSON.parse(localStorage.getItem(STATUS_CONFIG_KEY))}catch{}
+    if(!Array.isArray(statusConfig)||!statusConfig.length)statusConfig=DEFAULT_STATUS_CONFIG.map(x=>({...x}));
+    const byKey=new Map(statusConfig.map(x=>[x.key,x]));
+    statusConfig=DEFAULT_STATUS_CONFIG.map(def=>({...def,...(byKey.get(def.key)||{})}));
+  }
+  function statusDef(key){return statusConfig.find(x=>x.key===key)||DEFAULT_STATUS_CONFIG.find(x=>x.key===key)||{key,emoji:'',label:key}}
   const $=s=>document.querySelector(s);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uid=()=>crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -44,17 +59,19 @@
   let data=null;
   const filterState={search:'',category:'',status:''};
   function migrate(){
+    const migrateLegacyYellow=data.effectiveStatusSchema!==2;
     data.categories.forEach(c=>c.items=(c.items||[]).map(x=>{
       const rawSignal=String(x.signalman||'').trim();
       const genericSignal=/^(COM|SEM)\s+SINALEIRO$/i.test(rawSignal);
       const legacy=splitLegacySubstitute(x.prefix||'');
-      return {...x,id:x.id||uid(),prefix:equipmentLabel(legacy.prefix,x.capacity),capacity:'',substitute:normalizeEquipmentLabel(x.substitute||legacy.substitute),
+      return {...x,status:migrateLegacyYellow&&x.status==='yellow'?'orange':x.status,id:x.id||uid(),prefix:equipmentLabel(legacy.prefix,x.capacity),capacity:'',substitute:normalizeEquipmentLabel(x.substitute||legacy.substitute),
         operatorStatus:x.operatorStatus||(x.status==='red'?'none':x.operator?'with':'without'),
         signalmanStatus:x.signalmanStatus||(x.status==='red'?'none':/^COM/i.test(rawSignal)?'with':/^SEM/i.test(rawSignal)?'without':rawSignal?'with':'none'),
         signalman:genericSignal?'':rawSignal,control:x.control==='checked'?'checked':'pending'};
     }));
+    data.effectiveStatusSchema=2;
   }
-  function load(){try{data=JSON.parse(localStorage.getItem(STORAGE_KEY))}catch{}if(!data||!Array.isArray(data.categories))data=defaults();migrate()}
+  function load(){loadStatusConfig();try{data=JSON.parse(localStorage.getItem(STORAGE_KEY))}catch{}if(!data||!Array.isArray(data.categories))data=defaults();migrate()}
   function capture(){
     data.title=$('#initialTitle').value.trim()||'Status XCMG MINA';
     data.date=$('#initialDate').value||today();
@@ -82,10 +99,10 @@
     });
     data.categories=categories;
   }
-  function statusOptions(selected){return [['green','🟢'],['yellow','🟡'],['red','🔴']].map(([v,l])=>`<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join('')}
+  function statusOptions(selected){return statusConfig.map(x=>`<option value="${esc(x.key)}" ${x.key===selected?'selected':''}>${esc(x.emoji)}</option>`).join('')}
   function personStatusOptions(selected,type){
     const noun=type==='operator'?'OPERADOR':'SINALEIRO';
-    return [['with',`🟢 COM ${noun}`],['without',`🟡 SEM ${noun}`],['none','— NÃO SE APLICA']].map(([v,l])=>`<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join('');
+    return [['with',`${statusDef('green').emoji} COM ${noun}`],['without',`${statusDef('orange').emoji} SEM ${noun}`],['none','— NÃO SE APLICA']].map(([v,l])=>`<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join('');
   }
   function controlLabel(control){return control==='checked'?'✓ Conferido':'⚠ Pendente'}
   function equipmentSortKey(value=''){
@@ -205,26 +222,30 @@
   function personLine(status,name,type){
     if(status==='none')return '';
     const noun=type==='operator'?'OPERADOR':'SINALEIRO';
-    const emoji=status==='with'?'🟢':'🟡';
+    const emoji=status==='with'?statusDef('green').emoji:statusDef('orange').emoji;
     if(status==='without')return `${emoji} SEM ${noun}`;
     return `${emoji} COM ${noun}${name?` – ${name}`:''}`;
   }
   function lineFor(x){
-    const emoji=x.status==='red'?'🔴':x.status==='yellow'?'🟡':'🟢';
+    const emoji=statusDef(x.status).emoji;
     const equipment=equipmentLabel(x.prefix,x.capacity);
     const substitution=x.substitute?` (SUB. ${x.substitute})`:'';
     // WhatsApp: todos os equipamentos ficam em negrito, incluindo a substituição.
     const head=`${emoji} *${equipment}${substitution}*`.trim();
     const first=[head,x.location].filter(Boolean).join(' - ');
     const lines=[first];
+    // O amarelo acrescenta automaticamente a descrição cadastrada para o selo,
+    // sem alterar, desativar ou limpar os campos de operador e sinaleiro.
+    // O local continua sendo informado manualmente pelo usuário.
+    if(x.status==='yellow')lines.push(statusDef('yellow').label);
     const op=personLine(x.operatorStatus,x.operator,'operator');if(op)lines.push(op);
     const sig=personLine(x.signalmanStatus,x.signalman,'signalman');if(sig)lines.push(sig);
     if(x.notes)lines.push(x.notes);
     return lines.join('\n');
   }
   function text(){capture();const d=new Intl.DateTimeFormat('pt-BR').format(new Date(`${data.date||today()}T12:00:00`));let out=`${data.title} ${d}\n\n${data.team.toUpperCase()}\n\n${data.weekday.toUpperCase()}\n`;
-    data.categories.forEach(c=>{const valid=c.items.filter(x=>x.prefix||x.notes||x.operator||x.location);if(!c.name&&!valid.length)return;out+=`\n\n${c.name}\n`;valid.forEach(x=>{out+=`\n${lineFor(x)}\n`})});
-    out+='\n\nLegenda:\n🟢 Com operador / com sinaleiro\n🟡 Sem operador / sem sinaleiro\n🔴 Manutenção corretiva/preventiva\n\n📱 Gerado por XCMG REPORT';return out.trim()}
+    data.categories.forEach(c=>{const valid=c.items.filter(x=>x.prefix||x.notes||x.operator||x.location);if(!c.name&&!valid.length)return;out+=`\n\n*${c.name}*\n`;valid.forEach(x=>{out+=`\n${lineFor(x)}\n`})});
+    out+=`\n\nLegenda:\n${statusConfig.map(x=>`${x.emoji} ${x.label}`).join('\n')}\n\n📱 Gerado por XCMG REPORT`;return out.trim()}
   function generate(){const o=$('#initialOutput');if(o)o.value=text()}
   function save(){capture();localStorage.setItem(STORAGE_KEY,JSON.stringify(data));generate();toast('Rascunho do status do efetivo salvo')}
   function addItem(cat){
@@ -364,10 +385,34 @@
     generate();
     toast(markChecked?'Equipamento salvo e conferido':'Controle interno atualizado');
   }
+  function openStatusConfig(){
+    const body=$('#initialStatusConfigRows');
+    if(!body)return;
+    body.innerHTML=statusConfig.map(x=>`<div class="initial-status-config-row" data-key="${esc(x.key)}"><span class="initial-status-config-color" data-status="${esc(x.key)}"></span><input class="initial-status-config-emoji" value="${esc(x.emoji)}" maxlength="4" aria-label="Emoji"><input class="initial-status-config-label" value="${esc(x.label)}" aria-label="Descrição do status"></div>`).join('');
+    $('#initialStatusConfigBackdrop')?.classList.remove('hidden');
+  }
+  function closeStatusConfig(){$('#initialStatusConfigBackdrop')?.classList.add('hidden')}
+  function saveStatusConfig(event){
+    event.preventDefault();
+    const rows=[...document.querySelectorAll('#initialStatusConfigRows .initial-status-config-row')];
+    statusConfig=rows.map(row=>({key:row.dataset.key,emoji:row.querySelector('.initial-status-config-emoji').value.trim()||statusDef(row.dataset.key).emoji,label:row.querySelector('.initial-status-config-label').value.trim()||statusDef(row.dataset.key).label}));
+    localStorage.setItem(STATUS_CONFIG_KEY,JSON.stringify(statusConfig));
+    closeStatusConfig();render();toast('Legenda do Status do Efetivo atualizada');
+  }
+  function resetStatusConfig(){
+    statusConfig=DEFAULT_STATUS_CONFIG.map(x=>({...x}));
+    localStorage.setItem(STATUS_CONFIG_KEY,JSON.stringify(statusConfig));
+    openStatusConfig();toast('Legenda padrão restaurada');
+  }
   function bind(){
     // Vinculação direta e reaplicada após cada renderização.
     bindFilterControls();
     $('#initialNewEquipmentBtn')?.addEventListener('click',addFilteredEquipment);
+    $('#initialEditLegendBtn')?.addEventListener('click',openStatusConfig);
+    $('#initialStatusConfigForm')?.addEventListener('submit',saveStatusConfig);
+    $('#closeInitialStatusConfigBtn')?.addEventListener('click',closeStatusConfig);
+    $('#cancelInitialStatusConfigBtn')?.addEventListener('click',closeStatusConfig);
+    $('#resetInitialStatusConfigBtn')?.addEventListener('click',resetStatusConfig);
     $('#initialEquipmentForm')?.addEventListener('submit',saveEquipmentEditor);
     $('#closeInitialEquipmentModalBtn')?.addEventListener('click',closeEquipmentEditor);
     $('#cancelInitialEquipmentModalBtn')?.addEventListener('click',closeEquipmentEditor);

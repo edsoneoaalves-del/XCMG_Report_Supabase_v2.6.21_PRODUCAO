@@ -1,0 +1,12 @@
+XCMG REPORT v2.12.62
+
+STATUS DO EFETIVO – FORMATAÇÃO AUTOMÁTICA DO AMARELO
+
+- Ao selecionar o status 🟡, o relatório passa a inserir automaticamente:
+  Atualização de Selo (Vale)
+- O local/área permanece com preenchimento manual.
+- Operador e sinaleiro não são exibidos na linha amarela, pois esse status é exclusivo para atualização de selo.
+
+Exemplo:
+🟡 *1JA218 250T* - Pátio XCMG
+Atualização de Selo (Vale)

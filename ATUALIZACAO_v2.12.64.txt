@@ -1,0 +1,14 @@
+XCMG REPORT v2.12.64
+
+ALTERAÇÃO REALIZADA
+- Atualizada somente a legenda do Relatório Operacional para o modelo compacto:
+  🟢 Disponível
+  🔵 Em atendimento / Atendeu
+  🟡 Atualização de Selo (Vale)
+  🔴 Manutenção Preventiva / Corretiva
+
+PRESERVADO
+- Status do Efetivo.
+- Status de operador e sinaleiro.
+- Regras e cadastros dos equipamentos.
+- Relatório de manutenção e histórico.

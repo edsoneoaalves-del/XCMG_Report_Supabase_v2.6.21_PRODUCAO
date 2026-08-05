@@ -1,0 +1,8 @@
+XCMG REPORT v2.12.55 — STATUS EDITÁVEIS PELO ADMINISTRADOR
+
+- Novo painel em Configurações > Status do Equipamento.
+- Administrador pode cadastrar, renomear, ordenar, ativar/desativar status.
+- Cada status é vinculado a um farol e ao tipo Operacional ou Interno.
+- Status interno abre Substitui equipamento e Informações Internas.
+- Renomeações preservam compatibilidade com registros existentes por meio de aliases.
+- Exemplo: Atualização de Selo (Vale) pode ser alterado para Atualização de CRM sem modificar o código.

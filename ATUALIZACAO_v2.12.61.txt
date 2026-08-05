@@ -1,0 +1,11 @@
+XCMG REPORT v2.12.61 — STATUS DO EFETIVO INDEPENDENTE E EDITÁVEL
+
+- Status exclusivos do módulo Status do Efetivo:
+  🟢 Com operador / com sinaleiro
+  🟠 Sem operador / sem sinaleiro
+  🟡 Atualização de Selo (Vale)
+  🔴 Manutenção corretiva/preventiva
+- Nova opção “Editar legenda” para alterar ícones e descrições futuramente.
+- Configuração salva localmente e independente dos demais módulos.
+- Filtros, farol da tabela e mensagem final atualizados para quatro status.
+- Migração automática do antigo amarelo “Sem operador” para o novo laranja.

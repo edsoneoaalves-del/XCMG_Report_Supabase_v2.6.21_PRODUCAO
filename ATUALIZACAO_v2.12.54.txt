@@ -1,0 +1,10 @@
+XCMG REPORT v2.12.54
+
+- Restaurado o fluxo original dos status de operação e manutenção.
+- Substitui equipamento aparece somente em Preventiva, Corretiva e Atualização de Selo (Vale).
+- Informações Internas aparecem somente nesses três status.
+- Atualização de Selo (Vale) incluída no fluxo interno e no Histórico de Manutenção.
+- Farol definido automaticamente pelo status, evitando combinações contraditórias.
+- Painel de Equipamentos mantido com as mesmas colunas e informações.
+- Relatório operacional continua exibindo status, localização e substituição quando houver.
+- Relatório interno mantém local e descrição detalhada da situação.

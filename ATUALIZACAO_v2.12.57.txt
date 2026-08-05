@@ -1,0 +1,7 @@
+XCMG REPORT v2.12.57 — FAROL COMPACTO NO PAINEL
+
+- A coluna Farol / Status mostra somente a luz colorida.
+- O nome do status não ocupa espaço na linha.
+- Ao clicar no farol, a lista continua exibindo os nomes dos status para seleção rápida.
+- Mantida a alteração rápida, marcação como Pendente e salvamento da linha.
+- Layout alinhado ao padrão compacto do Status do Efetivo.

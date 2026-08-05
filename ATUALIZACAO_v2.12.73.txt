@@ -1,0 +1,12 @@
+XCMG REPORT — ATUALIZAÇÃO v2.12.73
+
+CORREÇÃO APLICADA
+- Equipamentos registrados como substituídos no Histórico de Manutenção agora aparecem sempre com farol vermelho (🔴), mesmo quando o status atual do equipamento estiver como Disponível.
+- Mantida a regra da Atualização de Selo (Vale) em amarelo (🟡) para equipamentos sem registro de substituição.
+- Atualizada a versão do cache PWA para 2.12.73.
+
+EXEMPLO
+🔴 1JA339
+📍 Local: Base externa XCMG
+🛠️ Motivo: teste
+   ↳ Substituído por: 1JA405

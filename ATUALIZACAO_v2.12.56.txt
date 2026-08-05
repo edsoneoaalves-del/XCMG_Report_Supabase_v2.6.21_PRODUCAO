@@ -1,0 +1,8 @@
+XCMG REPORT v2.12.56 — STATUS RÁPIDO NO PAINEL
+
+- O campo Farol / Status do painel de Equipamentos agora é editável diretamente na linha.
+- O usuário pode trocar rapidamente entre os status ativos sem abrir o modal de Detalhes.
+- O farol muda visualmente conforme o status configurado pelo administrador.
+- A linha fica Pendente após a alteração e é confirmada pelo botão Salvar.
+- Para status internos, caso faltem Local ou Motivo da Manutenção, o sistema abre Detalhes para completar as informações obrigatórias.
+- As demais edições rápidas do painel foram mantidas.

@@ -1,0 +1,10 @@
+XCMG REPORT — v2.12.69
+
+DASHBOARD — INDICADORES CORRIGIDOS
+
+- Adicionado o cartão “Disponível” na visão geral da operação.
+- Frota Ativa agora considera somente prefixos únicos cadastrados no painel.
+- Equipamentos citados apenas como substituídos permanecem nas Informações Internas, sem aumentar a Frota Ativa.
+- Todos os cartões e barras usam a mesma classificação por prefixo.
+- A soma de Disponível + Em atendimento + Atualização de Selo + Preventiva + Corretiva corresponde à Frota Ativa.
+- Texto do indicador azul alterado para “Equipamentos em atendimento”.

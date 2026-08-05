@@ -1,0 +1,7 @@
+XCMG REPORT v2.12.60 — RELATÓRIO SEM CAMPOS VAZIOS
+
+- O Relatório Operacional não exibe mais traços ou placeholders para campos vazios.
+- A linha é montada somente com as informações preenchidas.
+- Ordem preservada: Farol/Prefixo, Cliente, Localização, Condição/Posicionamento, Status, Combustível e Observação.
+- Exemplo: 🟡*1JA348* – Pool – Base Externa XCMG – Atualização de Selo (Vale) – 91%⛽
+- A linha de substituição continua aparecendo somente quando houver equipamento substituto.

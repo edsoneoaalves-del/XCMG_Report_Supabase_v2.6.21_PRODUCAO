@@ -1,0 +1,12 @@
+XCMG REPORT — v2.12.68
+
+HISTÓRICO DE MANUTENÇÃO
+- Removido o texto redundante “– Substituído” do título dos equipamentos que possuem substituição.
+- A substituição permanece informada somente na linha “↳ Substituído por:”.
+- Local e motivo permanecem inalterados.
+
+Exemplo:
+🟢 1JA218 (250t)
+📍 Local: Base Externa XCMG
+🛠 Motivo: DDDDDDDD
+   ↳ Substituído por: 1JA221 (110t)

@@ -2609,3 +2609,215 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.icon-btn:focus-
   #page-status-inicial .initial-unified-table tr.initial-item>td{grid-template-columns:84px minmax(0,1fr)!important;gap:7px!important}
   #page-status-inicial .initial-row-actions{grid-template-columns:1fr 1fr 36px!important}
 }
+
+
+/* v2.12.53 — farol padronizado entre Equipamentos e Status do Efetivo */
+.equipment-signal-wrap{display:flex;align-items:center;gap:8px;min-width:0}
+.equipment-signal-control{position:relative;display:inline-flex;align-items:center;width:72px;min-width:72px;height:46px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.equipment-signal-control:focus-within{border-color:#258df5;box-shadow:0 0 0 3px rgba(37,141,245,.24)}
+.equipment-signal-indicator{position:absolute;left:17px;width:15px;height:15px;border-radius:50%;pointer-events:none;z-index:2;background:#34d399;box-shadow:0 0 10px currentColor}
+.equipment-signal-control[data-signal="green"] .equipment-signal-indicator{background:#34d399;color:#34d399}
+.equipment-signal-control[data-signal="blue"] .equipment-signal-indicator{background:#3b82f6;color:#3b82f6}
+.equipment-signal-control[data-signal="yellow"] .equipment-signal-indicator{background:#f6c84c;color:#f6c84c}
+.equipment-signal-control[data-signal="red"] .equipment-signal-indicator{background:#f0445e;color:#f0445e}
+.equipment-signal-select{position:relative;z-index:1;width:100%;height:100%;padding:0 8px 0 42px;border:0!important;background:transparent!important;color:transparent!important;cursor:pointer;outline:0;appearance:auto}
+.equipment-signal-select option{color:#fff;background:#13263d;font-size:18px}
+.equipment-status-caption{max-width:115px;color:var(--muted);font-size:10px;line-height:1.2;white-space:normal}
+.modal-signal-control{width:100%;min-width:0;height:48px}
+.modal-signal-control .equipment-signal-indicator{left:18px}
+.modal-signal-control .equipment-signal-select{color:var(--text)!important;padding-left:50px;font-size:15px}
+@media(max-width:800px){.equipment-signal-wrap{justify-content:flex-end}.equipment-status-caption{max-width:160px;text-align:right}.equipment-signal-control{width:74px;min-width:74px}}
+
+
+/* v2.12.54 — farol automático e fluxo interno restaurado */
+.equipment-signal-control.is-readonly{cursor:default;pointer-events:none}
+.equipment-signal-readonly{font-size:0;line-height:1}
+.equipment-signal-control.is-readonly .equipment-signal-indicator{margin:auto}
+
+/* v2.12.55 - Administração dos status do equipamento */
+.status-settings-panel{grid-column:1/-1}
+.status-config-list{display:grid;gap:8px;margin-bottom:18px}
+.status-config-row{display:grid;grid-template-columns:42px 38px minmax(180px,1fr) 80px auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+.status-config-row.is-inactive{opacity:.58}
+.status-config-row small{display:block;color:var(--muted);margin-top:2px}
+.status-order,.status-config-signal{text-align:center;font-weight:700}
+.status-config-signal{font-size:18px}
+.status-active-badge{font-size:12px;color:var(--muted)}
+.status-config-form{padding-top:16px;border-top:1px solid var(--border)}
+.status-config-form h3{margin:0 0 12px}
+.status-active-check{display:flex!important;align-items:center;gap:9px;align-self:end;min-height:44px}
+.status-active-check input{width:auto!important}
+@media(max-width:700px){.status-config-row{grid-template-columns:30px 30px 1fr auto}.status-active-badge{display:none}.status-config-row .btn{grid-column:3/5;justify-self:end}.status-settings-panel{grid-column:auto}}
+
+
+/* v2.12.56 — alteração rápida de status diretamente no painel de Equipamentos */
+.quick-status-wrap{min-width:210px}
+.quick-status-control{display:flex;align-items:center;gap:10px;min-width:210px;padding:0 10px;border:1px solid var(--line);border-radius:11px;background:var(--panel-2,#11243a)}
+.quick-status-control .equipment-signal-indicator{flex:0 0 auto}
+.equipment-status-quick-select{min-width:0;width:100%;border:0!important;background:transparent!important;box-shadow:none!important;padding:11px 30px 11px 0!important;color:var(--text)!important;font-weight:600;cursor:pointer}
+.equipment-status-quick-select:focus{outline:none!important;box-shadow:none!important}
+.quick-status-control:focus-within{border-color:#1d8cff;box-shadow:0 0 0 3px rgba(29,140,255,.18)}
+@media(max-width:800px){.quick-status-wrap,.quick-status-control{min-width:100%;width:100%}.equipment-status-quick-select{font-size:16px!important;min-height:46px}}
+
+/* v2.12.58 — farol compacto no painel: somente a luz fica visível; nomes aparecem ao abrir */
+.quick-status-wrap{min-width:72px!important;width:72px!important;justify-content:center!important}
+.quick-status-control{position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;width:72px!important;min-width:72px!important;height:46px!important;padding:0!important;overflow:hidden!important}
+.quick-status-control .equipment-signal-indicator{position:static!important;display:block!important;flex:0 0 auto!important;margin:0!important;z-index:2!important}
+.equipment-status-quick-select{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;opacity:0!important;padding:0!important;margin:0!important;cursor:pointer!important;z-index:3!important}
+.equipment-status-quick-select option{opacity:1!important;color:#fff!important;background:#13263d!important;font-size:16px!important}
+@media(max-width:800px){.quick-status-wrap,.quick-status-control{min-width:72px!important;width:72px!important}.equipment-status-quick-select{min-height:46px!important;font-size:16px!important}}
+
+
+/* v2.12.61 — legenda independente e editável do Status do Efetivo */
+#page-status-inicial .initial-status-control[data-status="orange"] .initial-status-indicator{background:#ff9f2f;color:#ff9f2f}
+.initial-status-config-modal{width:min(680px,calc(100vw - 28px))}
+.initial-status-config-head,.initial-status-config-row{display:grid;grid-template-columns:44px 82px minmax(0,1fr);gap:10px;align-items:center}
+.initial-status-config-head{padding:8px 4px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase}
+.initial-status-config-row{padding:8px 0;border-top:1px solid var(--border)}
+.initial-status-config-color{width:18px;height:18px;border-radius:50%;justify-self:center;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 16%,transparent)}
+.initial-status-config-color[data-status="green"]{background:#43df93;color:#43df93}
+.initial-status-config-color[data-status="orange"]{background:#ff9f2f;color:#ff9f2f}
+.initial-status-config-color[data-status="yellow"]{background:#f5d142;color:#f5d142}
+.initial-status-config-color[data-status="red"]{background:#ff5266;color:#ff5266}
+.initial-status-config-emoji{text-align:center;font-size:20px}
+.initial-status-config-actions{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;margin-top:16px}
+@media(max-width:560px){.initial-status-config-head,.initial-status-config-row{grid-template-columns:36px 68px minmax(0,1fr)}.initial-status-config-actions{grid-template-columns:1fr 1fr}.initial-status-config-actions span{display:none}}
+
+/* v2.12.75 — Modo Mobile Compacto: até dois equipamentos visíveis por tela */
+@media (max-width:800px){
+  /* Evita o zoom automático do iPhone ao focar campos */
+  input, select, textarea{font-size:16px!important}
+
+  /* Painel Equipamentos: cartão compacto com campos em duas colunas */
+  #page-equipamentos .equipment-table tbody{gap:7px!important}
+  #page-equipamentos .equipment-table tbody tr{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:5px 7px!important;
+    padding:7px 8px!important;
+    border-radius:10px!important;
+    min-height:0!important;
+  }
+  #page-equipamentos .equipment-table tbody tr>td{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:center!important;
+    gap:2px!important;
+    min-width:0!important;
+    padding:2px 0!important;
+    border:0!important;
+  }
+  #page-equipamentos .equipment-table tbody tr>td::before{
+    display:block!important;
+    font-size:7px!important;
+    line-height:1!important;
+    letter-spacing:.025em!important;
+  }
+  #page-equipamentos .equipment-table tbody tr>td:first-child{
+    grid-column:1/-1!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:6px!important;
+    padding-bottom:3px!important;
+    border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)!important;
+  }
+  #page-equipamentos .equipment-table tbody tr>td:first-child::before{display:none!important}
+  #page-equipamentos .equipment-id-cell strong{font-size:14px!important;line-height:1!important}
+  #page-equipamentos .equipment-id-cell small{font-size:9px!important;margin:0!important}
+  #page-equipamentos .quick-field,
+  #page-equipamentos .client-quick-field,
+  #page-equipamentos .substitute-quick-field{
+    height:31px!important;min-height:31px!important;padding:3px 6px!important;border-radius:7px!important;
+  }
+  #page-equipamentos .equipment-signal-control{height:31px!important;min-height:31px!important;width:100%!important;min-width:0!important}
+  #page-equipamentos .equipment-signal-indicator{left:12px!important;width:12px!important;height:12px!important}
+  #page-equipamentos .equipment-signal-select{padding-left:31px!important}
+  #page-equipamentos .equipment-status-caption{display:none!important}
+  #page-equipamentos .fuel-edit{height:31px!important}
+  #page-equipamentos .update-control{height:31px!important;min-height:31px!important;width:100%!important;padding:2px 5px!important;font-size:9px!important}
+  #page-equipamentos .row-actions{
+    grid-column:1/-1!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr 32px!important;
+    gap:5px!important;
+    padding-top:3px!important;
+    border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)!important;
+  }
+  #page-equipamentos .row-actions::before{display:none!important}
+  #page-equipamentos .row-actions .btn{height:31px!important;min-height:31px!important;padding:2px 5px!important;font-size:9px!important}
+  #page-equipamentos .row-actions .icon-delete{width:32px!important;height:31px!important;min-height:31px!important}
+
+  /* Status do Efetivo: cada equipamento vira um cartão baixo em duas colunas */
+  #page-status-inicial .initial-unified-table tbody.initial-items{gap:7px!important}
+  #page-status-inicial .initial-unified-table tr.initial-item{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:4px 7px!important;
+    padding:7px 8px!important;
+    border-radius:10px!important;
+  }
+  #page-status-inicial .initial-unified-table tr.initial-item>td{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:center!important;
+    gap:2px!important;
+    min-width:0!important;
+    width:auto!important;
+    padding:2px 0!important;
+    border:0!important;
+  }
+  #page-status-inicial .initial-unified-table tr.initial-item>td::before{
+    font-size:7px!important;line-height:1!important;letter-spacing:.025em!important;
+  }
+  #page-status-inicial .initial-item input,
+  #page-status-inicial .initial-item select{
+    height:31px!important;min-height:31px!important;padding:3px 6px!important;border-radius:7px!important;
+  }
+  #page-status-inicial .initial-equipment-saved{min-height:31px!important;padding:5px 7px!important}
+  #page-status-inicial .initial-equipment-saved strong{font-size:11px!important}
+  #page-status-inicial .initial-control-btn{height:31px!important;min-height:31px!important;font-size:9px!important}
+  #page-status-inicial .initial-row-actions{
+    grid-column:1/-1!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr 32px!important;
+    gap:5px!important;
+    padding-top:3px!important;
+    border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)!important;
+  }
+  #page-status-inicial .initial-row-actions::before{display:none!important}
+  #page-status-inicial .initial-row-actions .btn{height:31px!important;min-height:31px!important;font-size:9px!important}
+  #page-status-inicial .initial-row-actions .initial-remove-item{width:32px!important;min-width:32px!important;height:31px!important}
+
+  /* Cabeçalhos e filtros reduzidos para liberar altura útil */
+  #page-equipamentos .toolbar,
+  #page-status-inicial .initial-filter-toolbar{gap:5px!important;margin-bottom:6px!important;padding:6px!important}
+  #page-equipamentos .panel-head{margin-bottom:7px!important}
+}
+
+@media (max-width:360px){
+  #page-equipamentos .equipment-table tbody tr,
+  #page-status-inicial .initial-unified-table tr.initial-item{gap:3px 5px!important;padding:6px!important}
+  #page-equipamentos .row-actions,
+  #page-status-inicial .initial-row-actions{grid-template-columns:1fr 1fr 30px!important}
+}
+
+
+/* v2.12.76 — Painel Status da Frota simplificado */
+.fleet-status-panel{margin-bottom:18px}
+.fleet-status-bars{display:grid;gap:12px}
+.fleet-bar-row{display:grid;grid-template-columns:290px minmax(220px,1fr) 145px;align-items:center;gap:18px;min-height:40px}
+.fleet-bar-label{display:flex;align-items:center;gap:12px;min-width:0}
+.fleet-bar-label>span:last-child{display:flex;flex-direction:column;min-width:0}
+.fleet-bar-label strong{font-size:13px;color:var(--text);line-height:1.2}
+.fleet-bar-label small{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap}
+.fleet-bar-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:0 0 34px;background:color-mix(in srgb,var(--row-color) 80%,#07121f);border:1px solid color-mix(in srgb,var(--row-color) 85%,transparent);color:#fff;font-weight:900;box-shadow:0 5px 14px color-mix(in srgb,var(--row-color) 24%,transparent)}
+.fleet-bar-track{height:18px;background:#172b43;border-radius:999px;position:relative;overflow:visible;min-width:0}
+.fleet-bar-fill{height:100%;border-radius:999px;display:flex;align-items:center;justify-content:center;min-width:0;transition:width .25s ease}
+.fleet-bar-fill span{color:#fff;font-size:11px;font-weight:800;line-height:1;text-shadow:0 1px 2px #0008}
+.fleet-bar-percent{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:800;color:#e8f1fb}
+.fleet-bar-count{text-align:right;font-size:12px;color:var(--text);white-space:nowrap}
+@media(max-width:900px){.fleet-bar-row{grid-template-columns:185px minmax(110px,1fr) 100px;gap:10px}.fleet-bar-label small{white-space:normal}.fleet-bar-count{font-size:10px}}
+@media(max-width:600px){.fleet-status-panel{padding:14px}.fleet-status-panel .panel-head{margin-bottom:12px}.fleet-bar-row{grid-template-columns:1fr;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}.fleet-bar-row:last-child{border-bottom:0}.fleet-bar-label{padding-right:90px;position:relative}.fleet-bar-count{position:absolute;right:14px;margin-top:8px}.fleet-bar-track{height:14px}.fleet-bar-icon{width:30px;height:30px;flex-basis:30px}.fleet-bar-label strong{font-size:12px}.fleet-bar-label small{font-size:9px}}

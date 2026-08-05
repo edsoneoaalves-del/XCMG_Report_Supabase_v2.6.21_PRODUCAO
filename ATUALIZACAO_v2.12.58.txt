@@ -1,0 +1,8 @@
+XCMG REPORT v2.12.58 — REGRA DO FAROL COM SUBSTITUIÇÃO
+
+- Quando houver equipamento substituto, o farol aceita somente:
+  🟢 Disponível
+  🔵 Em atendimento / Atendeu
+- As opções 🟡 Atenção e 🔴 Indisponível ficam bloqueadas na alteração rápida.
+- O status interno do equipamento original (Preventiva, Corretiva ou Atualização de Selo) é preservado para os relatórios e Histórico de Manutenção.
+- Sem substituto, permanecem disponíveis todos os faróis conforme o status.

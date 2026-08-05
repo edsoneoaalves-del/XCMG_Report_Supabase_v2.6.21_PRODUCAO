@@ -1,0 +1,7 @@
+XCMG REPORT v2.12.53
+
+- Farol de Equipamentos padronizado com a interface do Status do Efetivo.
+- Quatro faróis: 🟢 Disponível, 🔵 Em atendimento / Atendeu, 🟡 Atenção e 🔴 Indisponível.
+- Status disponíveis: Disponível, Em atendimento, Atendeu, Preventiva, Corretiva e Atualização de Selo (Vale).
+- Preventiva e Corretiva sugerem vermelho; Atualização de Selo sugere amarelo; o farol continua editável.
+- Informações internas e local de manutenção permanecem editáveis.

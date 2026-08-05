@@ -1,0 +1,10 @@
+XCMG REPORT v2.12.75 — MODO MOBILE COMPACTO
+
+- Layout do notebook preservado.
+- Cartões de equipamentos compactados exclusivamente no celular.
+- Campos distribuídos em duas colunas internas.
+- Objetivo de exibir até dois equipamentos verticalmente em uma tela comum de celular.
+- Campos mantidos com fonte de 16 px para impedir zoom automático no iPhone.
+- Botões Salvar, Detalhes e Excluir reorganizados em uma linha compacta.
+- Aplicado nos módulos Equipamentos e Status do Efetivo.
+- Cache do PWA atualizado para carregar o novo layout.

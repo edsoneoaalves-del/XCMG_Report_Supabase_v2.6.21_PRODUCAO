@@ -1,0 +1,13 @@
+XCMG REPORT v2.12.63
+
+STATUS DO EFETIVO — AMARELO SEM ALTERAR O EFETIVO
+
+- Mantidas integralmente as opções de Status Operador:
+  🟢 Com operador / 🟠 Sem operador / — Não se aplica.
+- Mantidas integralmente as opções de Status Sinaleiro:
+  🟢 Com sinaleiro / 🟠 Sem sinaleiro / — Não se aplica.
+- Ao selecionar o status 🟡 do equipamento, o relatório acrescenta automaticamente:
+  Atualização de Selo (Vale).
+- A seleção do amarelo não desativa, não limpa e não modifica operador ou sinaleiro.
+- O campo Local / Área permanece com preenchimento manual.
+- Cache PWA atualizado para v2.12.63.
