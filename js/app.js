@@ -303,6 +303,49 @@
       return base;
     }catch{return clone(initial)}
   }
+  async function syncCurrentUserStateFromRemote({render=true,notify=false}={}){
+    if(!currentUser||!connectionIsOnline())return false;
+    const key=USER_KEY(currentUser.id);
+    const pendingKeys=new Set(await window.XCMGOfflineSync?.pendingKeys?.()||[]);
+    // Nunca troca uma alteração local que ainda aguarda envio.
+    if(pendingKeys.has(key))return false;
+    const record=await remoteGetRecord(key);
+    if(!record?.value||!Array.isArray(record.value.equipments))return false;
+    const remoteState=record.value;
+    const localRaw=localStorage.getItem(key);
+    let localState=null;
+    try{localState=localRaw?JSON.parse(localRaw):null}catch{}
+    const localStamp=Number(localState?._cloudUpdatedAt||0);
+    const remoteStamp=Date.parse(record.updatedAt||'')||0;
+    if(localState&&remoteStamp&&localStamp>=remoteStamp)return false;
+    const next={...clone(initial),...remoteState};
+    next.settings={...initial.settings,...(next.settings||{})};
+    next.history=Array.isArray(next.history)?next.history:[];
+    next.reports=Array.isArray(next.reports)?next.reports:[];
+    next.equipments=Array.isArray(next.equipments)?next.equipments.map(migrateEquipment):[];
+    next._cloudUpdatedAt=remoteStamp||Date.now();
+    localStorage.setItem(key,JSON.stringify(next));
+    state=next;
+    if(render){
+      applyTheme();loadSettingsForm();renderPrefixOptions();renderDashboard();renderEquipments();renderHistory();generateReport();
+    }
+    if(notify&&$('#page-equipamentos')?.classList.contains('active'))toast('Equipamentos atualizados em outro dispositivo');
+    return true;
+  }
+  function applyRemoteUserState(value,updatedAt=null,{notify=true}={}){
+    if(!currentUser||!value||!Array.isArray(value.equipments))return false;
+    const next={...clone(initial),...value};
+    next.settings={...initial.settings,...(next.settings||{})};
+    next.history=Array.isArray(next.history)?next.history:[];
+    next.reports=Array.isArray(next.reports)?next.reports:[];
+    next.equipments=next.equipments.map(migrateEquipment);
+    next._cloudUpdatedAt=Date.parse(updatedAt||'')||Date.now();
+    localStorage.setItem(USER_KEY(currentUser.id),JSON.stringify(next));
+    state=next;
+    applyTheme();loadSettingsForm();renderPrefixOptions();renderDashboard();renderEquipments();renderHistory();generateReport();
+    if(notify&&$('#page-equipamentos')?.classList.contains('active'))toast('Equipamentos atualizados em outro dispositivo');
+    return true;
+  }
   function newId(){
     return globalThis.crypto?.randomUUID?.()||(`id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
   }
@@ -458,10 +501,10 @@
   }
   function save(){
     if(!currentUser||isConsultation())return;
-    if(!isConsultation()){
-      localStorage.setItem(USER_KEY(currentUser.id),JSON.stringify(state));
-      remoteSet(USER_KEY(currentUser.id),state);
-    }
+    // Não envia automaticamente o estado local ao entrar. Primeiro busca a
+    // versão mais recente do Supabase para impedir que um aparelho antigo
+    // sobrescreva os equipamentos atualizados em outro dispositivo.
+    syncCurrentUserStateFromRemote({render:true,notify:false});
     scheduleAutoTurnSave();
   }
   function scheduleAutoTurnSave(delay=500){
@@ -1404,6 +1447,11 @@
         if(!key)return;
         if(payload.eventType==='DELETE')localStorage.removeItem(key);
         else if(Object.prototype.hasOwnProperty.call(row,'value'))localStorage.setItem(key,JSON.stringify(row.value));
+        if(currentUser&&key===USER_KEY(currentUser.id)&&payload.eventType!=='DELETE'){
+          // O evento do próprio aparelho também pode chegar; aplicar o valor
+          // remoto é seguro e mantém todas as telas com o mesmo estado.
+          applyRemoteUserState(row.value,row.updated_at,{notify:true});
+        }
         if(key===MAINT_HISTORY_KEY){
           loadMaintenanceHistory();
           renderMaintenanceHistory();
@@ -1442,6 +1490,14 @@
     if(currentUser)startSession();
     else{$('.app-shell').classList.add('hidden');$('#loginScreen').classList.remove('hidden')}
     setupRealtimeSync();
+    // Reforço para navegadores/PWAs em que o Realtime fica suspenso em
+    // segundo plano. Ao voltar para a tela e periodicamente, busca o estado
+    // mais recente sem substituir alterações locais pendentes.
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='visible'&&currentUser)syncCurrentUserStateFromRemote({render:true,notify:false});
+    });
+    window.addEventListener('focus',()=>{if(currentUser)syncCurrentUserStateFromRemote({render:true,notify:false})});
+    setInterval(()=>{if(currentUser&&document.visibilityState==='visible')syncCurrentUserStateFromRemote({render:true,notify:false})},12000);
     // Registro do Service Worker fica centralizado em js/pwa.js.
     setTimeout(flushOfflineQueue,1200);
   }

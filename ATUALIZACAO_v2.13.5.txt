@@ -1,0 +1,8 @@
+XCMG REPORT v2.13.5 — SINCRONIZAÇÃO DOS EQUIPAMENTOS CORRIGIDA
+
+- Corrigida a atualização do relatório de equipamentos entre aparelhos.
+- O equipamento alterado em um dispositivo passa a ser recarregado nos demais.
+- Impedido que um aparelho com dados antigos sobrescreva o Supabase ao fazer login.
+- Adicionada atualização por Realtime, retorno à tela, foco da janela e verificação periódica.
+- Alterações locais pendentes continuam protegidas e não são substituídas.
+- Mantidas as correções do Status do Efetivo, Histórico de Manutenção e sessão de login.
