@@ -1,0 +1,7 @@
+XCMG REPORT v2.13.9
+
+ALTERAÇÃO ÚNICA:
+- Relatório Operacional: bloqueio de re-renderização/sobrescrita remota enquanto o usuário estiver digitando em input, textarea ou select.
+- A sincronização permanece ativa; atualizações remotas voltam a ser aplicadas no ciclo seguinte após o usuário sair do campo.
+- Evita o “pulo” da tela e a perda de foco durante a digitação.
+- Demais telas, regras, cálculos, dados, sincronizações e funcionalidades foram mantidos sem alteração funcional.

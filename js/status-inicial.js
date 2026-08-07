@@ -2,15 +2,72 @@
   'use strict';
   const STORAGE_KEY='xcmg_report_initial_status_v1';
   const STATUS_CONFIG_KEY='xcmg_report_effective_status_config_v1';
+  const SESSION_KEY='xcmg_report_active_session_v1';
+  const PERSON_PREFS_KEY=userId=>`xcmg_report_effective_people_${userId}`;
   const cloud=()=>window.XCMGCloudStorage;
+  let personPrefs={};
+  let personPrefsUserId='';
+  function activeUserId(){
+    try{return String(JSON.parse(localStorage.getItem(SESSION_KEY))?.userId||'')}catch{return ''}
+  }
+  function activePersonKey(){const id=activeUserId();return id?PERSON_PREFS_KEY(id):''}
+  function loadPersonPrefsLocal(){
+    const userId=activeUserId();
+    if(userId===personPrefsUserId)return;
+    personPrefsUserId=userId;personPrefs={};
+    if(!userId)return;
+    try{personPrefs=JSON.parse(localStorage.getItem(PERSON_PREFS_KEY(userId)))||{}}catch{personPrefs={}}
+    if(!personPrefs||typeof personPrefs!=='object'||Array.isArray(personPrefs))personPrefs={};
+  }
+  function personEquipmentKey(value=''){return normalizeEquipmentLabel(value)}
+  function applyPersonPrefs(){
+    loadPersonPrefsLocal();
+    if(!personPrefsUserId||!data?.categories)return;
+    data.categories.forEach(category=>(category.items||[]).forEach(x=>{
+      const pref=personPrefs[personEquipmentKey(equipmentLabel(x.prefix,x.capacity))];
+      if(!pref)return;
+      x.operator=String(pref.operator??'');
+      x.signalman=String(pref.signalman??'');
+    }));
+  }
+  function capturePersonPrefsFromRows(){
+    loadPersonPrefsLocal();
+    if(!personPrefsUserId)return;
+    document.querySelectorAll('.initial-item').forEach(row=>{
+      const equipment=personEquipmentKey(row.querySelector('[data-field="equipment"]')?.value||row.dataset.equipment||'');
+      if(!equipment)return;
+      personPrefs[equipment]={
+        operator:String(row.querySelector('[data-field="operator"]')?.value||'').trim(),
+        signalman:String(row.querySelector('[data-field="signalman"]')?.value||'').trim()
+      };
+    });
+    localStorage.setItem(PERSON_PREFS_KEY(personPrefsUserId),JSON.stringify(personPrefs));
+  }
+  async function persistPersonPrefs(){
+    capturePersonPrefsFromRows();
+    const key=activePersonKey();
+    if(!key)return true;
+    try{
+      const ok=await cloud()?.set?.(key,personPrefs);
+      if(ok===false)throw new Error('Supabase não confirmou os nomes do usuário.');
+      return true;
+    }catch(error){console.warn('Falha ao sincronizar nomes de operador/sinaleiro do usuário:',error);return false}
+  }
+  function sharedStatusValue(value){
+    if(!value||!Array.isArray(value.categories))return value;
+    return {...value,categories:value.categories.map(category=>({...category,items:(category.items||[]).map(x=>({...x,operator:'',signalman:''}))}))};
+  }
   let dirty=false;
   let lastRemoteStamp='';
   let cloudPullRunning=false;
   async function persistCloud(key,value){
-    localStorage.setItem(key,JSON.stringify(value));
+    const isStatus=key===STORAGE_KEY;
+    if(isStatus)await persistPersonPrefs();
+    const storedValue=isStatus?sharedStatusValue(value):value;
+    localStorage.setItem(key,JSON.stringify(storedValue));
     dirty=false;
     try{
-      const ok=await cloud()?.set?.(key,value);
+      const ok=await cloud()?.set?.(key,storedValue);
       if(ok===false)throw new Error('Supabase não confirmou a gravação.');
       const record=await cloud()?.getRecord?.(key);
       if(record?.updatedAt)lastRemoteStamp=record.updatedAt;
@@ -27,7 +84,8 @@
     cloudPullRunning=true;
     try{
       let changed=false;
-      for(const key of [STORAGE_KEY,STATUS_CONFIG_KEY]){
+      const personKey=activePersonKey();
+      for(const key of [STORAGE_KEY,STATUS_CONFIG_KEY,personKey].filter(Boolean)){
         const record=await cloud().getRecord(key);
         if(!record||record.value===null||record.value===undefined)continue;
         const localRaw=localStorage.getItem(key);
@@ -112,7 +170,7 @@
     }));
     data.effectiveStatusSchema=2;
   }
-  function load(){loadStatusConfig();try{data=JSON.parse(localStorage.getItem(STORAGE_KEY))}catch{}if(!data||!Array.isArray(data.categories))data=defaults();migrate()}
+  function load(){loadStatusConfig();personPrefsUserId='';loadPersonPrefsLocal();try{data=JSON.parse(localStorage.getItem(STORAGE_KEY))}catch{}if(!data||!Array.isArray(data.categories))data=defaults();migrate();applyPersonPrefs()}
   function capture(){
     data.title=$('#initialTitle').value.trim()||'Status XCMG MINA';
     data.date=$('#initialDate').value||today();
@@ -139,6 +197,7 @@
       });
     });
     data.categories=categories;
+    capturePersonPrefsFromRows();
   }
   function statusOptions(selected){return statusConfig.map(x=>`<option value="${esc(x.key)}" ${x.key===selected?'selected':''}>${esc(x.emoji)}</option>`).join('')}
   function personStatusOptions(selected,type){
@@ -250,6 +309,8 @@
   }
   function render(){
     if(!data)load();
+    const currentPersonUser=activeUserId();
+    if(currentPersonUser!==personPrefsUserId){personPrefsUserId='';loadPersonPrefsLocal();applyPersonPrefs()}
     sortItemsByCategory();
     $('#initialTitle').value=data.title||'Status XCMG MINA';$('#initialDate').value=data.date||today();$('#initialTeam').value=data.team||'';$('#initialWeekday').value=data.weekday||weekday(data.date||today());
     $('#initialCategories').innerHTML=unifiedTableHtml();
@@ -473,9 +534,12 @@
   }
   window.addEventListener('xcmg-cloud-update',event=>{
     const key=event.detail?.key;
-    if(key===STORAGE_KEY||key===STATUS_CONFIG_KEY){
+    const personKey=activePersonKey();
+    if(key===STORAGE_KEY||key===STATUS_CONFIG_KEY||key===personKey){
       reloadFromStorage();
-      toast(key===STORAGE_KEY?'Status do efetivo atualizado em outro dispositivo':'Legenda do status atualizada');
+      if(key===STORAGE_KEY)toast('Status do efetivo atualizado em outro dispositivo');
+      else if(key===STATUS_CONFIG_KEY)toast('Legenda do status atualizada');
+      else toast('Operador e sinaleiro deste usuário atualizados');
     }
   });
   let initialized=false;

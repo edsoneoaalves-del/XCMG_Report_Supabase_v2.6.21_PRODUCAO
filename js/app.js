@@ -280,6 +280,15 @@
   let userStateSaveChain=Promise.resolve();
   let userStateWritesPending=0;
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  // Protege a edição do Relatório Operacional contra re-renderizações causadas
+  // pela sincronização remota. A sincronização volta a ser aplicada normalmente
+  // assim que o usuário sai do campo em edição.
+  function isOperationalEditing(){
+    const page=$('#page-equipamentos');
+    const active=document.activeElement;
+    if(!page?.classList.contains('active')||!active)return false;
+    return Boolean(active.matches?.('input, textarea, select')||active.isContentEditable);
+  }
   function isConsultation(){return currentUser?.role!=='admin'&&currentUser?.accessLevel==='consultation'}
   function canOperate(){return !isConsultation()}
   function denyConsultation(){if(isConsultation()){alert('Este usuário possui acesso somente para visualizar, copiar e compartilhar.');return true}return false}
@@ -307,6 +316,9 @@
   }
   async function syncCurrentUserStateFromRemote({render=true,notify=false}={}){
     if(!currentUser||!connectionIsOnline())return false;
+    // Não substitui o DOM/estado enquanto o usuário está digitando no
+    // Relatório Operacional. O próximo ciclo aplica o remoto após a edição.
+    if(isOperationalEditing())return false;
     const key=USER_KEY(currentUser.id);
     const pendingKeys=new Set(await window.XCMGOfflineSync?.pendingKeys?.()||[]);
     // Nunca troca uma alteração local que ainda aguarda envio.
@@ -1475,9 +1487,15 @@
         const row=payload.new||payload.old||{};
         const key=row.key;
         if(!key)return;
-        if(payload.eventType==='DELETE')localStorage.removeItem(key);
-        else if(Object.prototype.hasOwnProperty.call(row,'value'))localStorage.setItem(key,JSON.stringify(row.value));
-        if(currentUser&&key===USER_KEY(currentUser.id)&&payload.eventType!=='DELETE'){
+        const editingCurrentUser=Boolean(currentUser&&key===USER_KEY(currentUser.id)&&isOperationalEditing());
+        // Durante a digitação no Relatório Operacional, não troca nem o cache
+        // local nem a tela pelo estado remoto. O próximo ciclo de sincronização
+        // recupera a atualização depois que o usuário sair do campo.
+        if(!editingCurrentUser){
+          if(payload.eventType==='DELETE')localStorage.removeItem(key);
+          else if(Object.prototype.hasOwnProperty.call(row,'value'))localStorage.setItem(key,JSON.stringify(row.value));
+        }
+        if(currentUser&&key===USER_KEY(currentUser.id)&&payload.eventType!=='DELETE'&&!editingCurrentUser){
           // Durante envios locais em sequência, ignora o eco Realtime de uma
           // gravação anterior para não desfazer a alteração mais recente.
           if(userStateWritesPending===0)applyRemoteUserState(row.value,row.updated_at,{notify:true});
