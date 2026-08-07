@@ -1,4 +1,4 @@
-const VERSION = '2.13.6';
+const VERSION = '2.13.7';
 // Versão do cache incrementada (independente da versão do app) para forçar a
 // troca completa de qualquer cache anterior, inclusive de instalações feitas
 // antes da correção do App Shell e do start_url.
@@ -6,7 +6,7 @@ const VERSION = '2.13.6';
 // toCacheable() abaixo) — index.html/offline.html nunca eram armazenados no
 // cache porque a Vercel (cleanUrls) redireciona "*.html" e a Cache API rejeita
 // respostas marcadas como "redirected".
-const CACHE_VERSION = 'v25';
+const CACHE_VERSION = 'v26';
 const STATIC_CACHE = `xcmg-static-${VERSION}-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `xcmg-runtime-${VERSION}-${CACHE_VERSION}`;
 const LOCAL_ASSETS = [
@@ -15,11 +15,11 @@ const LOCAL_ASSETS = [
   './offline.html',
   './manifest.json',
   './connectivity-check.txt',
-  './css/style.css?v=2.13.6',
-  './js/offline-sync.js?v=2.13.6',
-  './js/status-inicial.js?v=2.13.6',
-  './js/app.js?v=2.13.6',
-  './js/pwa.js?v=2.13.6',
+  './css/style.css?v=2.13.7',
+  './js/offline-sync.js?v=2.13.7',
+  './js/status-inicial.js?v=2.13.7',
+  './js/app.js?v=2.13.7',
+  './js/pwa.js?v=2.13.7',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',

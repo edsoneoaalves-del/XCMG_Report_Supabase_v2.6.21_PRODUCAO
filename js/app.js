@@ -553,7 +553,27 @@
   function updateTurnPanel(){}
   function esc(v=''){return String(v).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
   function fmtDate(v){return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(v))}
-  function loadMaintenanceHistory(){try{maintenanceHistory=JSON.parse(localStorage.getItem(MAINT_HISTORY_KEY))||[]}catch{maintenanceHistory=[]}purgeMaintenanceHistory(false)}
+  function sanitizeMaintenanceItems(items=[]){
+    const list=Array.isArray(items)?items:[];
+    const replacementPrefixes=new Set();
+    list.forEach(item=>(item.replacedBy||[]).forEach(label=>{
+      const prefix=parseEquipmentLabel(label).prefix;
+      if(prefix)replacementPrefixes.add(String(prefix).trim().toUpperCase());
+    }));
+    return list.filter(item=>{
+      const prefix=String(item?.prefix||'').trim().toUpperCase();
+      // O equipamento substituto continua operacional (verde/azul) e não pode
+      // aparecer como uma segunda manutenção no mesmo fechamento.
+      return !replacementPrefixes.has(prefix)||(item.replacedBy||[]).length>0;
+    });
+  }
+  function loadMaintenanceHistory(){
+    try{
+      maintenanceHistory=JSON.parse(localStorage.getItem(MAINT_HISTORY_KEY))||[];
+      maintenanceHistory=(Array.isArray(maintenanceHistory)?maintenanceHistory:[]).map(record=>({...record,items:sanitizeMaintenanceItems(record.items)}));
+    }catch{maintenanceHistory=[]}
+    purgeMaintenanceHistory(false)
+  }
   function purgeMaintenanceHistory(persist=true){const limit=Date.now()-90*24*60*60*1000;maintenanceHistory=(Array.isArray(maintenanceHistory)?maintenanceHistory:[]).filter(x=>new Date(x.savedAt||x.date||0).getTime()>=limit);if(persist){localStorage.setItem(MAINT_HISTORY_KEY,JSON.stringify(maintenanceHistory));remoteSet(MAINT_HISTORY_KEY,maintenanceHistory)}}
   function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
   function log(action,detail){state.history.unshift({id:newId(),action,detail,date:new Date().toISOString()});state.history=state.history.slice(0,500)}
@@ -698,7 +718,7 @@
     // Manutenção = preventiva + corretiva + atualização de selo + substituições.
     // Cada prefixo é contado uma única vez.
     const items=new Map();
-    state.equipments.filter(x=>isInternalStatus(x.status)).forEach(x=>{
+    state.equipments.filter(x=>isInternalStatus(x.status)&&!parseEquipmentLabel(x.substitute).prefix).forEach(x=>{
       const key=String(x.prefix||'').trim().toUpperCase();
       if(!key)return;
       items.set(key,{prefix:key,capacity:x.capacity||'',status:x.status,location:x.location||'',maintenanceLocation:x.maintenanceLocation||'',maintenanceReason:x.maintenanceReason||'',replacedBy:[]});
@@ -1125,8 +1145,9 @@
   function maintenanceMessage(record){
     const date=new Intl.DateTimeFormat('pt-BR').format(new Date(record.reportDate+'T12:00:00'));
     let out=`*EQUIPAMENTOS EM MANUTENÇÃO – MINA – ${date} – ${String(record.team||'').toUpperCase()}*\n\n`;
-    if(!record.items.length)return out+'Nenhum equipamento em manutenção no fechamento do turno.';
-    out+=record.items.map(x=>{
+    const recordItems=sanitizeMaintenanceItems(record.items);
+    if(!recordItems.length)return out+'Nenhum equipamento em manutenção no fechamento do turno.';
+    out+=recordItems.map(x=>{
       const label=equipmentLabel(x.prefix,x.capacity);
       if(x.replacedBy?.length){
         // v2.12.73: equipamentos substituídos pertencem ao histórico de manutenção
@@ -1143,14 +1164,14 @@
       if(x.maintenanceReason)lines.push(`🛠 Motivo: ${x.maintenanceReason}`);
       return lines.join('\n');
     }).join('\n');
-    out+=`\n\n*Total:* ${record.items.length} equipamento${record.items.length===1?'':'s'} em manutenção.`;
+    out+=`\n\n*Total:* ${recordItems.length} equipamento${recordItems.length===1?'':'s'} em manutenção.`;
     out+=`\n────────────────────────────────\n\n📱 Gerado por XCMG REPORT`;
     return out;
   }
   function saveMaintenanceSnapshot(){
     const reportDate=$('#reportDate').value||new Date().toISOString().slice(0,10);
     const team=$('#reportTeam').value.trim()||currentUser?.team||'Turma não informada';
-    const items=clone(getMaintenanceItems());
+    const items=sanitizeMaintenanceItems(clone(getMaintenanceItems()));
     const existingIndex=maintenanceHistory.findIndex(x=>x.reportDate===reportDate&&String(x.team).trim().toLowerCase()===team.trim().toLowerCase());
     const record={id:existingIndex>=0?maintenanceHistory[existingIndex].id:newId(),reportDate,team,savedAt:new Date().toISOString(),savedBy:currentUser?.name||'',items};
     if(existingIndex>=0)maintenanceHistory.splice(existingIndex,1);
@@ -1165,9 +1186,10 @@
     const list=maintenanceHistory.filter(r=>!q||[r.reportDate,r.team,r.savedBy,...r.items.flatMap(x=>[x.prefix,x.capacity,x.status,x.location,x.maintenanceLocation,x.maintenanceReason,...(x.replacedBy||[])])].join(' ').toLowerCase().includes(q));
     host.innerHTML=list.map(r=>{
       const date=new Intl.DateTimeFormat('pt-BR').format(new Date(r.reportDate+'T12:00:00'));
-      const rows=r.items.map(x=>{let detail='';if(x.replacedBy?.length){const parts=[];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);parts.push(`<small>↳ Substituído por: ${esc(x.replacedBy.join(', '))}</small>`);detail=parts.join('<br>')}else{const parts=[`<b>${esc(x.status||'Em manutenção')}</b>`];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);detail=parts.join('<br>')}return `<div class="maintenance-history-row"><strong>${esc(equipmentLabel(x.prefix,x.capacity))}</strong><span>${detail}</span></div>`}).join('')||'<div class="empty compact">Nenhum equipamento em manutenção neste fechamento.</div>';
+      const visibleItems=sanitizeMaintenanceItems(r.items);
+      const rows=visibleItems.map(x=>{let detail='';if(x.replacedBy?.length){const parts=[];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);parts.push(`<small>↳ Substituído por: ${esc(x.replacedBy.join(', '))}</small>`);detail=parts.join('<br>')}else{const parts=[`<b>${esc(x.status||'Em manutenção')}</b>`];if(x.maintenanceLocation)parts.push(`📍 Local: ${esc(x.maintenanceLocation)}`);if(x.maintenanceReason)parts.push(`🛠 Motivo: ${esc(x.maintenanceReason)}`);detail=parts.join('<br>')}return `<div class="maintenance-history-row"><strong>${esc(equipmentLabel(x.prefix,x.capacity))}</strong><span>${detail}</span></div>`}).join('')||'<div class="empty compact">Nenhum equipamento em manutenção neste fechamento.</div>';
       const deleteButton=currentUser?.role==='admin'?`<button class="btn small danger" data-delete-maintenance-history="${r.id}">Excluir registro</button>`:'';
-      return `<article class="panel maintenance-history-card"><div class="panel-head"><div><span class="eyebrow">${esc(date)}</span><h2>${esc(r.team)}</h2><small>Fechado por ${esc(r.savedBy||'usuário')} em ${fmtDate(r.savedAt)}</small></div><div class="actions"><button class="btn small" data-copy-maintenance="${r.id}">Copiar mensagem</button><button class="btn small" data-share-maintenance="${r.id}">Compartilhar</button>${deleteButton}</div></div><div class="maintenance-history-rows">${rows}</div><div class="maintenance-history-total">Total: <strong>${r.items.length}</strong></div></article>`;
+      return `<article class="panel maintenance-history-card"><div class="panel-head"><div><span class="eyebrow">${esc(date)}</span><h2>${esc(r.team)}</h2><small>Fechado por ${esc(r.savedBy||'usuário')} em ${fmtDate(r.savedAt)}</small></div><div class="actions"><button class="btn small" data-copy-maintenance="${r.id}">Copiar mensagem</button><button class="btn small" data-share-maintenance="${r.id}">Compartilhar</button>${deleteButton}</div></div><div class="maintenance-history-rows">${rows}</div><div class="maintenance-history-total">Total: <strong>${visibleItems.length}</strong></div></article>`;
     }).join('')||'<div class="empty">Nenhum fechamento de manutenção registrado nos últimos 90 dias.</div>';
   }
   function deleteMaintenanceHistoryRecord(id){

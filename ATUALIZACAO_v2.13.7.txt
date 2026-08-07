@@ -1,0 +1,9 @@
+XCMG REPORT v2.13.7
+
+CORREÇÃO — HISTÓRICO DE MANUTENÇÃO
+
+- Corrigida a duplicação do equipamento substituto no Histórico de Manutenção.
+- O equipamento que está disponível ou em atendimento como substituto não é mais listado como uma segunda manutenção.
+- O equipamento originalmente parado continua aparecendo normalmente, com local, motivo e a indicação “Substituído por”.
+- Registros antigos com essa duplicação também são filtrados na exibição, na cópia e no compartilhamento.
+- Nenhuma outra regra, tela ou funcionalidade foi alterada.
