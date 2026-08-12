@@ -286,8 +286,12 @@
   function isOperationalEditing(){
     const page=$('#page-equipamentos');
     const active=document.activeElement;
-    if(!page?.classList.contains('active')||!active)return false;
-    return Boolean(active.matches?.('input, textarea, select')||active.isContentEditable);
+    if(!page?.classList.contains('active'))return false;
+    // Enquanto existir alteração pendente, a tela de Equipamentos permanece
+    // estável e não é reconstruída por sincronizações automáticas.
+    if(hasPendingEquipmentChanges())return true;
+    if(!active)return false;
+    return Boolean(page.contains(active)&&(active.matches?.('input, textarea, select, button')||active.isContentEditable));
   }
   function isConsultation(){return currentUser?.role!=='admin'&&currentUser?.accessLevel==='consultation'}
   function canOperate(){return !isConsultation()}
@@ -348,6 +352,9 @@
   }
   function applyRemoteUserState(value,updatedAt=null,{notify=true}={}){
     if(!currentUser||!value||!Array.isArray(value.equipments))return false;
+    // Não aplica eco/realtime remoto enquanto a tela de Equipamentos estiver
+    // em edição ou possuir alterações pendentes. Evita pulo/rolagem da tela.
+    if(isOperationalEditing())return false;
     const next={...clone(initial),...value};
     next.settings={...initial.settings,...(next.settings||{})};
     next.history=Array.isArray(next.history)?next.history:[];

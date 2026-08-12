@@ -1,0 +1,6 @@
+XCMG REPORT v2.13.10
+
+AJUSTE PONTUAL — TELA DE EQUIPAMENTOS
+- Eliminado o pulo/rolagem automática da tela durante o preenchimento dos campos.
+- A sincronização remota não reconstrói a tela enquanto houver campo em edição ou alteração pendente.
+- Mantidas as demais funcionalidades e regras do projeto.

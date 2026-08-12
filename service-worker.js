@@ -1,4 +1,4 @@
-const VERSION = '2.13.9';
+const VERSION = '2.13.10';
 // Versão do cache incrementada (independente da versão do app) para forçar a
 // troca completa de qualquer cache anterior, inclusive de instalações feitas
 // antes da correção do App Shell e do start_url.
@@ -15,11 +15,11 @@ const LOCAL_ASSETS = [
   './offline.html',
   './manifest.json',
   './connectivity-check.txt',
-  './css/style.css?v=2.13.9',
-  './js/offline-sync.js?v=2.13.9',
-  './js/status-inicial.js?v=2.13.9',
-  './js/app.js?v=2.13.9',
-  './js/pwa.js?v=2.13.9',
+  './css/style.css?v=2.13.10',
+  './js/offline-sync.js?v=2.13.10',
+  './js/status-inicial.js?v=2.13.10',
+  './js/app.js?v=2.13.10',
+  './js/pwa.js?v=2.13.10',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
