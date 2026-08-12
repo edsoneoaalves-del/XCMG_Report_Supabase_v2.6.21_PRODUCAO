@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=2.13.10">
+  <link rel="stylesheet" href="css/style.css?v=2.13.12">
 </head>
 <body>
   <section class="pwa-install-banner hidden" id="pwaInstallBanner" aria-live="polite">
@@ -287,39 +287,61 @@
   <div class="modal-backdrop hidden" id="modalBackdrop">
     <div class="modal">
       <div class="modal-head"><h2 id="modalTitle">Novo equipamento</h2><button class="icon-btn" id="closeModalBtn">×</button></div>
-      <form id="equipmentForm">
+      <form id="equipmentForm" class="equipment-details-form">
         <input type="hidden" id="equipmentId">
-        <div class="form-grid">
-          <label>Prefixo*<input id="eqPrefix" list="prefixOptions" required placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="prefixOptions"></datalist></label>
-          <label>Categoria*<select id="eqCategory" required></select></label>
-          <input type="hidden" id="eqCapacity">
-          <label>Farol*<div class="equipment-signal-control modal-signal-control" data-signal="green"><span class="equipment-signal-indicator" aria-hidden="true"></span><select id="eqSignal" class="equipment-signal-select" required aria-label="Farol do equipamento"></select></div></label>
-          <label>Status do equipamento*<select id="eqStatus" required></select></label>
-          <label id="clientField">Cliente<input id="eqClient" list="clientOptions" placeholder="Pool, Vulca, CMD..."></label>
-          <label>Localização*<input id="eqLocation" list="locationOptions" required placeholder="Pátio XCMG"></label>
-          <label id="loadStatusField">Status do Munck<select id="eqLoadStatus"><option value="">Selecione...</option><option>Carregado</option><option>Vazio</option></select></label>
-          <label id="substituteField">Substitui equipamento<input id="eqSubstitute" list="substituteOptions" placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="substituteOptions"></datalist></label>
-          <label>Combustível (%)<input type="number" min="0" max="100" id="eqFuel" value="100"></label>
-          <label class="full">Condição / posicionamento<input id="eqCondition" placeholder="com gaiola, patolado, carregado com contrapeso..."></label>
-          <label class="full">Observação<textarea id="eqNotes" rows="3"></textarea></label>
-          <section class="maintenance-details full hidden" id="maintenanceDetailsSection">
-            <div class="maintenance-details-head">
-              <div><span class="eyebrow">INFORMAÇÃO INTERNA</span><h3>🔧 Apoio à Manutenção</h3></div>
-              <small>Uso exclusivo do Histórico de Manutenção</small>
-            </div>
-            <div class="maintenance-details-grid">
-              <label id="maintenanceLocationField">Local da manutenção*<input id="eqMaintenanceLocation" placeholder="Ex.: Base Externa XCMG"></label>
-              <label id="maintenanceReasonField">Motivo da manutenção*<textarea id="eqMaintenanceReason" rows="2" placeholder="Ex.: Preventiva de 500 horas, vazamento hidráulico ou pneu furado"></textarea></label>
-            </div>
-          </section>
-          <datalist id="clientOptions">
-            <option value="Pool"><option value="Truckless/GPA"><option value="Vulca"><option value="Sotreq"><option value="Elétrica"><option value="Perfuração"><option value="Escavação"><option value="CMD"><option value="Preventiva Truckless"><option value="Oficina">
-          </datalist>
-          <datalist id="locationOptions">
-            <option value="Pátio XCMG"><option value="Base Externa XCMG"><option value="Pátio Iglu"><option value="Pátio 14"><option value="5ª Britagem"><option value="BM11"><option value="BM12"><option value="TR12"><option value="TR13"><option value="Mina"><option value="Usina"><option value="Oficina">
-          </datalist>
-        </div>
-        <div class="actions end"><button type="button" class="btn" id="cancelModalBtn">Cancelar</button><button type="submit" class="btn primary">Salvar equipamento</button></div>
+        <p class="equipment-details-intro">Edite as informações do equipamento. As alterações serão refletidas no painel.</p>
+
+        <section class="equipment-detail-section section-identification">
+          <div class="equipment-detail-section-title"><span class="section-number">1</span><span class="section-icon">▣</span><h3>Identificação</h3></div>
+          <div class="form-grid">
+            <label>Prefixo*<input id="eqPrefix" list="prefixOptions" required placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="prefixOptions"></datalist></label>
+            <label>Categoria*<select id="eqCategory" required></select></label>
+            <input type="hidden" id="eqCapacity">
+          </div>
+        </section>
+
+        <section class="equipment-detail-section section-operational">
+          <div class="equipment-detail-section-title"><span class="section-number">2</span><span class="section-icon">◉</span><h3>Situação operacional</h3></div>
+          <div class="form-grid operational-details-grid">
+            <label>Farol / Status*<div class="equipment-signal-control modal-signal-control" data-signal="green"><span class="equipment-signal-indicator" aria-hidden="true"></span><select id="eqSignal" class="equipment-signal-select" required aria-label="Farol do equipamento"></select></div></label>
+            <label id="clientField">Cliente<input id="eqClient" list="clientOptions" placeholder="Pool, Vulca, CMD..."></label>
+            <label>Localização*<input id="eqLocation" list="locationOptions" required placeholder="Pátio XCMG"></label>
+            <label id="loadStatusField">Status do Munck<select id="eqLoadStatus"><option value="">Selecione...</option><option>Carregado</option><option>Vazio</option></select></label>
+            <label>Combustível (%)<input type="number" min="0" max="100" id="eqFuel" value="100"></label>
+            <label class="full">Condição / posicionamento<input id="eqCondition" placeholder="com gaiola, patolado, carregado com contrapeso..."></label>
+            <label class="full">Observação<textarea id="eqNotes" rows="3" placeholder="Digite uma observação (opcional)"></textarea></label>
+          </div>
+        </section>
+
+        <section class="equipment-detail-section section-substitution" id="substitutionDetailsSection">
+          <div class="equipment-detail-section-title"><span class="section-number">3</span><span class="section-icon">⇄</span><h3>Substituição</h3></div>
+          <div class="form-grid one">
+            <label id="substituteField">Substitui equipamento<input id="eqSubstitute" list="substituteOptions" placeholder="Selecione ou digite o prefixo" autocomplete="off"><datalist id="substituteOptions"></datalist></label>
+          </div>
+        </section>
+
+        <section class="maintenance-details equipment-detail-section section-maintenance" id="maintenanceDetailsSection">
+          <div class="maintenance-details-head equipment-detail-section-title-row">
+            <div class="equipment-detail-section-title"><span class="section-number">4</span><span class="section-icon">🔧</span><h3>Apoio à Manutenção</h3></div>
+            <small>Uso exclusivo do Histórico de Manutenção</small>
+          </div>
+          <div class="maintenance-status-row">
+            <label>Status do equipamento*<select id="eqStatus" required></select></label>
+          </div>
+          <div class="maintenance-details-grid" id="maintenanceInternalFields">
+            <label id="maintenanceLocationField">Local da manutenção*<input id="eqMaintenanceLocation" placeholder="Ex.: Base Externa XCMG"></label>
+            <label id="maintenanceReasonField">Motivo da manutenção*<textarea id="eqMaintenanceReason" rows="2" placeholder="Ex.: Preventiva de 500 horas, vazamento hidráulico ou pneu furado"></textarea></label>
+          </div>
+        </section>
+
+        <datalist id="clientOptions">
+          <option value="Pool"><option value="Truckless/GPA"><option value="Vulca"><option value="Sotreq"><option value="Elétrica"><option value="Perfuração"><option value="Escavação"><option value="CMD"><option value="Preventiva Truckless"><option value="Oficina">
+        </datalist>
+        <datalist id="locationOptions">
+          <option value="Pátio XCMG"><option value="Base Externa XCMG"><option value="Pátio Iglu"><option value="Pátio 14"><option value="5ª Britagem"><option value="BM11"><option value="BM12"><option value="TR12"><option value="TR13"><option value="Mina"><option value="Usina"><option value="Oficina">
+        </datalist>
+
+        <div class="actions end equipment-details-actions"><button type="button" class="btn" id="cancelModalBtn">Cancelar</button><button type="submit" class="btn primary">Salvar alterações</button></div>
       </form>
     </div>
   </div>
@@ -382,10 +404,10 @@
 
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/offline-sync.js?v=2.13.10"></script>
-  <script src="js/status-inicial.js?v=2.13.10"></script>
-  <script src="js/app.js?v=2.13.10"></script>
-  <script src="js/pwa.js?v=2.13.10" defer></script>
+  <script src="js/offline-sync.js?v=2.13.12"></script>
+  <script src="js/status-inicial.js?v=2.13.12"></script>
+  <script src="js/app.js?v=2.13.12"></script>
+  <script src="js/pwa.js?v=2.13.12" defer></script>
 
   <script>
     // v2.12.47: mantém o cabeçalho da tabela visível e ajusta a área útil à tela.

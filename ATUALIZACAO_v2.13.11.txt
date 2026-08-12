@@ -1,0 +1,11 @@
+XCMG REPORT v2.13.11
+
+ALTERAÇÃO APROVADA — LAYOUT DO DETALHES
+
+- Mantido integralmente o layout padrão/painel principal e sua lógica de alimentação.
+- Alteração exclusivamente visual no modal aberto pelo botão Detalhes.
+- Campos existentes preservados com os mesmos IDs e mesma lógica de salvamento.
+- Novo agrupamento visual: Identificação, Situação operacional, Substituição e Apoio à Manutenção.
+- Apoio à Manutenção continua exclusivo do Histórico de Manutenção.
+- Mensagem operacional para o cliente permanece com a mesma lógica e formatação.
+- Versão/cache atualizados para v2.13.11.

@@ -1,0 +1,9 @@
+XCMG REPORT v2.13.12
+
+AJUSTE EXCLUSIVO NO MODAL DETALHES
+
+- O campo "Status do equipamento" foi removido do bloco 2 - Situação Operacional.
+- O mesmo campo foi reposicionado no bloco 4 - Apoio à Manutenção.
+- Local e motivo da manutenção continuam aparecendo somente quando o status exigir manutenção.
+- Nenhuma alteração foi feita no painel padrão, na estrutura de dados ou na geração da mensagem para o cliente.
+- Cache/PWA atualizado para v2.13.12.

@@ -998,7 +998,7 @@
   function updateMaintenanceDetailsVisibility(){
     const isMaintenanceStatus=isInternalStatus($('#eqStatus').value);
     $('#substituteField').classList.toggle('hidden',!isMaintenanceStatus);
-    $('#maintenanceDetailsSection').classList.toggle('hidden',!isMaintenanceStatus);
+    $('#maintenanceInternalFields').classList.toggle('hidden',!isMaintenanceStatus);
     $('#maintenanceLocationField').classList.toggle('hidden',!isMaintenanceStatus);
     $('#eqMaintenanceLocation').required=isMaintenanceStatus;
     $('#eqMaintenanceReason').required=isMaintenanceStatus;
@@ -1011,7 +1011,7 @@
   function openModal(id){if(denyConsultation())return;
     const x=state.equipments.find(e=>e.id===id);
     $('#equipmentId').value=x?.id||'';
-    $('#modalTitle').textContent=x?'Editar equipamento':'Novo equipamento';
+    $('#modalTitle').textContent=x?'Detalhes do equipamento':'Novo equipamento';
     $('#eqPrefix').value=x?.prefix||'';
     $('#eqCategory').value=x?.category||CATEGORIES[0];
     $('#eqCapacity').value=x?.capacity||'';
@@ -1043,13 +1043,13 @@
     const needsMaintenanceReason=isInternalStatus(status);
     if(needsMaintenanceReason&&!$('#eqMaintenanceReason').value.trim()){
       alert('Informe o motivo da manutenção. Essa informação será usada somente no Histórico de Manutenção.');
-      $('#maintenanceDetailsSection').classList.remove('hidden');
+      $('#maintenanceInternalFields').classList.remove('hidden');
       $('#eqMaintenanceReason').focus();
       return;
     }
     if(needsMaintenanceReason&&!$('#eqMaintenanceLocation').value.trim()){
       alert('Informe o local da manutenção. Essa informação será usada somente no Histórico de Manutenção.');
-      $('#maintenanceDetailsSection').classList.remove('hidden');
+      $('#maintenanceInternalFields').classList.remove('hidden');
       $('#maintenanceLocationField').classList.remove('hidden');
       $('#eqMaintenanceLocation').focus();
       return;

@@ -2839,3 +2839,49 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+
+/* XCMG REPORT v2.13.11 — melhoria visual exclusiva do modal Detalhes */
+#modalBackdrop .modal{width:min(860px,100%)}
+.equipment-details-form{display:grid;gap:16px}
+.equipment-details-intro{margin:-8px 0 2px;color:var(--muted);font-size:13px}
+.equipment-detail-section{border:1px solid #24476b;background:linear-gradient(145deg,#0e2238,#10263f);border-radius:14px;padding:16px}
+.equipment-detail-section-title{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.equipment-detail-section-title h3{margin:0;font-size:15px;text-transform:uppercase;letter-spacing:.035em;color:#2f8fff}
+.section-number{display:inline-grid;place-items:center;min-width:32px;height:32px;border-radius:7px;background:#2088f5;color:#fff;font-size:15px;font-weight:800;box-shadow:0 5px 14px #1d8cff2b}
+.section-icon{color:#2f8fff;font-size:20px;line-height:1;font-weight:800}
+.section-operational{border-color:#1765aa}
+.section-substitution{border-color:#6b4baa;background:linear-gradient(145deg,#12213a,#142342)}
+.section-substitution .equipment-detail-section-title h3,.section-substitution .section-icon{color:#9a6cff}
+.section-substitution .section-number{background:#7d51e8}
+.section-maintenance{border-color:#1685c5!important;background:linear-gradient(145deg,#10263c,#102a43)!important;margin-top:0!important}
+.section-maintenance .equipment-detail-section-title{margin-bottom:0}
+.section-maintenance .equipment-detail-section-title h3,.section-maintenance .section-icon{color:#25a8ff}
+.section-maintenance .section-number{background:#1299ee}
+.equipment-detail-section-title-row{align-items:center!important;margin-bottom:14px!important}
+.equipment-details-actions{border-top:1px solid var(--line);padding-top:16px;margin-top:0}
+.equipment-details-actions .btn{min-width:160px}
+#modalBackdrop .modal-head{margin-bottom:12px}
+#modalBackdrop #modalTitle{font-size:23px}
+#modalBackdrop .equipment-detail-section .form-grid label,#modalBackdrop .maintenance-details-grid label{font-size:12px;color:#a9bad0}
+#modalBackdrop .equipment-detail-section input,#modalBackdrop .equipment-detail-section select,#modalBackdrop .equipment-detail-section textarea{background:#132941;border-color:#2b4664}
+#modalBackdrop .equipment-detail-section input:focus,#modalBackdrop .equipment-detail-section select:focus,#modalBackdrop .equipment-detail-section textarea:focus{border-color:#2f8fff;box-shadow:0 0 0 2px #1d8cff20}
+@media(max-width:720px){
+  #modalBackdrop .modal{width:100%}
+  .equipment-details-form{gap:11px}
+  .equipment-details-intro{font-size:11px;margin-top:-5px}
+  .equipment-detail-section{padding:12px;border-radius:12px}
+  .equipment-detail-section-title{margin-bottom:10px}
+  .section-number{min-width:27px;height:27px;font-size:12px}
+  .section-icon{font-size:16px}
+  .equipment-detail-section-title h3{font-size:12px}
+  .equipment-detail-section-title-row{align-items:flex-start!important;flex-direction:column;gap:3px!important}
+  .equipment-detail-section-title-row small{text-align:left!important}
+  .equipment-details-actions{position:sticky;bottom:-18px;background:var(--surface);z-index:2;margin-left:-2px;margin-right:-2px;padding-bottom:calc(4px + env(safe-area-inset-bottom))}
+  .equipment-details-actions .btn{flex:1;min-width:0}
+}
+
+/* v2.13.12 - Status do equipamento reposicionado para Apoio à Manutenção no modal Detalhes */
+#modalBackdrop .maintenance-status-row{margin-bottom:14px}
+#modalBackdrop .maintenance-status-row label{display:block;font-size:12px;color:#a9bad0}
+#modalBackdrop .maintenance-status-row select{width:100%;background:#132941;border-color:#2b4664}
+#modalBackdrop .maintenance-status-row select:focus{border-color:#2f8fff;box-shadow:0 0 0 2px #1d8cff20}
